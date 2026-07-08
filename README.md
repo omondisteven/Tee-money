@@ -52,44 +52,6 @@ Zod - Schema validation
 
 React Responsive - Responsive design utilities
 
-<strong>🏗️ Project Structure<strong/>
-text
-teemoney/
-├── src/
-│   ├── app/
-│   │   ├── (protected)/        # Protected routes
-│   │   │   ├── dashboard/
-│   │   │   ├── transactions/
-│   │   │   ├── budgets/
-│   │   │   └── goals/
-│   │   ├── api/                # API routes
-│   │   │   ├── auth/
-│   │   │   ├── transactions/
-│   │   │   ├── budgets/
-│   │   │   └── goals/
-│   │   ├── login/
-│   │   ├── register/
-│   │   └── layout.tsx
-│   ├── components/             # Reusable components
-│   │   ├── layout/
-│   │   ├── transactions/
-│   │   ├── budgets/
-│   │   └── goals/
-│   ├── lib/                    # Utilities
-│   │   ├── prisma.ts
-│   │   ├── jwt.ts
-│   │   └── auth.ts
-│   ├── types/                  # TypeScript types
-│   └── utils/                  # Helper functions
-├── prisma/
-│   ├── schema.prisma          # Database schema
-│   └── seed.ts                # Seed data
-├── .env.local                  # Environment variables
-├── next.config.js
-├── tailwind.config.js
-├── tsconfig.json
-└── package.json
-
 <p />
 🛠️ Installation
 <p />
@@ -104,7 +66,7 @@ Step-by-Step Setup
 Clone the repository
 
 bash
-git clone https://github.com/yourusername/teemoney.git
+git clone https://github.com/omondisteven/teemoney.git
 cd teemoney
 Install dependencies
 
@@ -172,8 +134,6 @@ Steven Omondi
 
 Email: omondisteven@gmail.com
 
-GitHub: @stevenomondi
-
 🙏 Acknowledgments
 Next.js for the amazing React framework
 
@@ -185,7 +145,7 @@ Chart.js for the beautiful charts
 
 All contributors who help make this project better
 
-<div align="center">
+<div>
 Made with ❤️ by Steven Omondi
 
 Report Bug · Request Feature

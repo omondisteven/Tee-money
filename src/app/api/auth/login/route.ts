@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { signToken } from '@/lib/jwt'
+import { validateEnv } from '@/lib/env'
 
 export async function POST(request: NextRequest) {
   try {
+    validateEnv()
+    
     const { email, password } = await request.json()
 
     const user = await prisma.user.findUnique({
@@ -46,6 +49,7 @@ export async function POST(request: NextRequest) {
 
     return response
   } catch (error) {
+    console.error('Login error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

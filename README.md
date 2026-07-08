@@ -1,155 +1,108 @@
-💰 TeeMoney - Personal Finance Manager
-<div align="center">
-Smart Financial Management at Your Fingertips
-</div>
-📱 About TeeMoney
-<p />
-TeeMoney is a modern, mobile-responsive personal finance management application built with Next.js. It helps you track your income, expenses, budgets, and financial goals with an intuitive and beautiful interface.
-<p />
-✨ Key Features
-💰 All-in-one Money Tracker - Record income and daily expenses by category for accurate financial insights
-<p />
-📊 Budget Planner & Tracker - Set spending limits, monitor budgets, and view progress with charts & graphs
-<p />
-🎯 Savings & Goal Planner - Track savings growth, set financial goals, and stay motivated
-<p />
-📈 Personal Finance & Cash Flow Manager - Understand your income vs. expenses to improve financial health
-<p />
-⚡ Quick & Easy Expense Tracker - Log daily spending in seconds with a clean, user-friendly interface
-<p />
-🔐 Secure Authentication - JWT-based authentication with bcrypt password hashing
-<p />
-📱 Mobile-First Design - Optimized for mobile devices with a responsive layout
-<p />
-Frontend
-Next.js 14 - React framework with App Router
+<!-- README.md Content -->
+<h1 align="center">
+  <br>
+  💰 TeeMoney - Personal Finance Manager
+  <br>
+</h1>
 
-TypeScript - Type-safe JavaScript
+<h4 align="center">Smart Financial Management at Your Fingertips</h4>
 
-Tailwind CSS - Utility-first CSS framework
+<p align="center">
+  <a href="https://nextjs.org/">
+    <img src="https://img.shields.io/badge/Next.js-14.0-black?style=flat-square&logo=next.js" alt="Next.js">
+  </a>
+  <a href="https://www.prisma.io/">
+    <img src="https://img.shields.io/badge/Prisma-7.x-2D3748?style=flat-square&logo=prisma" alt="Prisma">
+  </a>
+  <a href="https://tailwindcss.com/">
+    <img src="https://img.shields.io/badge/Tailwind-3.x-38B2AC?style=flat-square&logo=tailwind-css" alt="Tailwind CSS">
+  </a>
+  <a href="https://www.typescriptlang.org/">
+    <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript" alt="TypeScript">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
+  </a>
+</p>
 
-Chart.js - Interactive charts and graphs
+<p align="center">
+  <a href="#-about-teemoney">About</a> •
+  <a href="#-key-features">Features</a> •
+  <a href="#-tech-stack">Tech Stack</a> •
+  <a href="#-installation">Installation</a> •
+  <a href="#-api-endpoints">API</a> •
+  <a href="#-contributing">Contributing</a> •
+  <a href="#-license">License</a>
+</p>
 
-React Icons - Beautiful icon library
+---
 
-Backend
-Next.js API Routes - Serverless API endpoints
+## 📱 About TeeMoney
 
-Prisma ORM - Type-safe database client
+**TeeMoney** is a modern, mobile-responsive personal finance management application built with Next.js. It helps you track your income, expenses, budgets, and financial goals with an intuitive and beautiful interface.
 
-PostgreSQL - Relational database
+The project is live on GitHub: [https://github.com/omondisteven/Tee-money](https://github.com/omondisteven/Tee-money)
 
-JWT - JSON Web Tokens for authentication
+---
 
-bcryptjs - Password hashing
+## ✨ Key Features
 
-Libraries & Tools
-React Hook Form - Form handling
+| Feature | Description |
+|---------|-------------|
+| **💰 All-in-one Money Tracker** | Record income and daily expenses by category for accurate financial insights |
+| **📊 Budget Planner & Tracker** | Set spending limits, monitor budgets, and view progress with charts & graphs |
+| **🎯 Savings & Goal Planner** | Track savings growth, set financial goals, and stay motivated |
+| **📈 Cash Flow Manager** | Understand your income vs. expenses to improve financial health |
+| **⚡ Quick Expense Tracker** | Log daily spending in seconds with a clean, user-friendly interface |
+| **🔐 Secure Authentication** | JWT-based authentication with bcrypt password hashing |
+| **📱 Mobile-First Design** | Optimized for mobile devices with a responsive layout |
 
-React Toastify - Toast notifications
+---
 
-Zod - Schema validation
+## 🚀 Tech Stack
 
-React Responsive - Responsive design utilities
+<details>
+<summary><b>Frontend</b></summary>
 
-<p />
-🛠️ Installation
-<p />
-Prerequisites
-Node.js 18+
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe JavaScript
+- **Tailwind CSS** - Utility-first CSS framework
+- **Chart.js** - Interactive charts and graphs
+- **React Icons** - Beautiful icon library
+</details>
 
-PostgreSQL 14+
+<details>
+<summary><b>Backend</b></summary>
 
-npm or yarn
+- **Next.js API Routes** - Serverless API endpoints
+- **Prisma ORM** - Type-safe database client
+- **PostgreSQL** - Relational database
+- **JWT** - JSON Web Tokens for authentication
+- **bcryptjs** - Password hashing
+</details>
 
-Step-by-Step Setup
-Clone the repository
+<details>
+<summary><b>Libraries & Tools</b></summary>
 
-bash
-git clone https://github.com/omondisteven/teemoney.git
-cd teemoney
-Install dependencies
+- **React Hook Form** - Form handling
+- **React Toastify** - Toast notifications
+- **Zod** - Schema validation
+- **React Responsive** - Responsive design utilities
+</details>
 
-bash
-npm install
-Set up environment variables
+---
 
-bash
-cp .env.example .env.local
-Then edit .env.local with your credentials:
+## 🛠️ Installation
 
-env
-DATABASE_URL="postgresql://username:password@localhost:5432/teemoney"
-JWT_SECRET="your-super-secret-jwt-key"
-Set up the database
+### Prerequisites
 
-bash
-# Create the database
-createdb teemoney
+- Node.js 18+
+- PostgreSQL 14+
+- npm or yarn
 
-# Push the schema
-npx prisma db push
+### Step-by-Step Setup
 
-# Generate Prisma client
-npx prisma generate
-
-# (Optional) Seed the database
-npm run db:seed
-Run the development server
-
-bash
-npm run dev
-Open the application
-Visit http://localhost:3000
-
-📦 Available Scripts
-Command	Description
-npm run dev	Start development server
-npm run build	Build for production
-npm start	Start production server
-npm run lint	Run ESLint
-npx prisma studio	Open Prisma Studio
-npx prisma db push	Push schema to database
-npm run db:seed	Seed the database
-npm run db:generate	Generate Prisma client
-<p />
-🎨 Contributing
-Contributions are welcome! Please follow these steps:
-
-Fork the repository
-
-Create a feature branch (git checkout -b feature/AmazingFeature)
-
-Commit your changes (git commit -m 'Add some AmazingFeature')
-
-Push to the branch (git push origin feature/AmazingFeature)
-
-Open a Pull Request
-
-📝 License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-👨‍💻 Developer
-Steven Omondi
-
-Email: omondisteven@gmail.com
-
-🙏 Acknowledgments
-Next.js for the amazing React framework
-
-Prisma for the excellent ORM
-
-Tailwind CSS for the utility-first CSS framework
-
-Chart.js for the beautiful charts
-
-All contributors who help make this project better
-
-<div>
-Made with ❤️ by Steven Omondi
-
-Report Bug · Request Feature
-
-⭐ Star this project if you find it useful!
-
-</div>
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/omondisteven/Tee-money.git
+   cd Tee-money

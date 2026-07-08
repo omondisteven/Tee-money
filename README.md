@@ -1,37 +1,26 @@
 💰 TeeMoney - Personal Finance Manager
 <div align="center">
-https://img.shields.io/badge/TeeMoney-Personal%2520Finance-blue?style=for-the-badge&logo=next.js
-
 Smart Financial Management at Your Fingertips
-
-https://img.shields.io/badge/Next.js-14.0-black?style=flat-square&logo=next.js
-https://img.shields.io/badge/Prisma-7.x-2D3748?style=flat-square&logo=prisma
-https://img.shields.io/badge/Tailwind-3.x-38B2AC?style=flat-square&logo=tailwind-css
-https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript
-https://img.shields.io/badge/License-MIT-green?style=flat-square
-
-Live Demo · Report Bug · Request Feature
-
 </div>
 📱 About TeeMoney
+<p />
 TeeMoney is a modern, mobile-responsive personal finance management application built with Next.js. It helps you track your income, expenses, budgets, and financial goals with an intuitive and beautiful interface.
-
+<p />
 ✨ Key Features
 💰 All-in-one Money Tracker - Record income and daily expenses by category for accurate financial insights
-
+<p />
 📊 Budget Planner & Tracker - Set spending limits, monitor budgets, and view progress with charts & graphs
-
+<p />
 🎯 Savings & Goal Planner - Track savings growth, set financial goals, and stay motivated
-
+<p />
 📈 Personal Finance & Cash Flow Manager - Understand your income vs. expenses to improve financial health
-
+<p />
 ⚡ Quick & Easy Expense Tracker - Log daily spending in seconds with a clean, user-friendly interface
-
+<p />
 🔐 Secure Authentication - JWT-based authentication with bcrypt password hashing
-
+<p />
 📱 Mobile-First Design - Optimized for mobile devices with a responsive layout
-
-🚀 Tech Stack
+<p />
 Frontend
 Next.js 14 - React framework with App Router
 
@@ -63,12 +52,7 @@ Zod - Schema validation
 
 React Responsive - Responsive design utilities
 
-📸 Screenshots
-<div align="center">
-Dashboard	Transactions	Budgets
-https://screenshots/dashboard.png	https://screenshots/transactions.png	https://screenshots/budgets.png
-</div>
-🏗️ Project Structure
+<strong>🏗️ Project Structure<strong/>
 text
 teemoney/
 ├── src/
@@ -105,7 +89,10 @@ teemoney/
 ├── tailwind.config.js
 ├── tsconfig.json
 └── package.json
+
+<p />
 🛠️ Installation
+<p />
 Prerequisites
 Node.js 18+
 
@@ -163,100 +150,7 @@ npx prisma studio	Open Prisma Studio
 npx prisma db push	Push schema to database
 npm run db:seed	Seed the database
 npm run db:generate	Generate Prisma client
-🗄️ Database Schema
-User
-prisma
-model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  password     String
-  name         String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  transactions Transaction[]
-  budgets      Budget[]
-  goals        Goal[]
-}
-Transaction
-prisma
-model Transaction {
-  id          String         @id @default(cuid())
-  userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        TransactionType // INCOME or EXPENSE
-  category    String
-  amount      Float
-  description String?
-  date        DateTime       @default(now())
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-}
-Budget
-prisma
-model Budget {
-  id          String         @id @default(cuid())
-  userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category    String
-  amount      Float          // Budget limit
-  spent       Float          @default(0) // Amount spent
-  month       Int            @default(0) // 0-11
-  year        Int
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-}
-Goal
-prisma
-model Goal {
-  id           String         @id @default(cuid())
-  userId       String
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name         String
-  targetAmount Float
-  currentAmount Float          @default(0)
-  deadline     DateTime
-  icon         String?         @default("🎯")
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-}
-🔒 Authentication
-The application uses JWT-based authentication:
-
-Registration - New users register with email, name, and password
-
-Login - Users log in with email and password
-
-Session Management - JWT tokens stored in HTTP-only cookies
-
-Protected Routes - All routes except login and register are protected
-
-🌐 API Endpoints
-Authentication
-Endpoint	Method	Description
-/api/auth/register	POST	Register a new user
-/api/auth/login	POST	Login user
-/api/auth/me	GET	Get current user
-/api/auth/logout	POST	Logout user
-Transactions
-Endpoint	Method	Description
-/api/transactions	GET	Get all transactions
-/api/transactions	POST	Create a transaction
-/api/transactions/{id}	PUT	Update transaction
-/api/transactions/{id}	DELETE	Delete transaction
-Budgets
-Endpoint	Method	Description
-/api/budgets	GET	Get all budgets
-/api/budgets	POST	Create/update budget
-/api/budgets/{id}	DELETE	Delete budget
-Goals
-Endpoint	Method	Description
-/api/goals	GET	Get all goals
-/api/goals	POST	Create a goal
-/api/goals/{id}	PUT	Update goal progress
-/api/goals/{id}	DELETE	Delete goal
-Dashboard
-Endpoint	Method	Description
-/api/dashboard	GET	Get dashboard summary
+<p />
 🎨 Contributing
 Contributions are welcome! Please follow these steps:
 

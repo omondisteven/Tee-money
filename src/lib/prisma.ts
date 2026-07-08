@@ -1,22 +1,35 @@
 import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { Pool } from 'pg'
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient }
+// For Prisma v7, we need to handle the constructor differently
+let prisma: PrismaClient
 
-// Create a PostgreSQL connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-})
-
-// Create the Prisma adapter
-const adapter = new PrismaPg(pool)
-
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    adapter,
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+if (process.env.NODE_ENV === 'production') {
+  // In production, try without adapter first
+  try {
+    prisma = new PrismaClient()
+  } catch (error) {
+    // If that fails, try with the adapter
+    const { PrismaPg } = await import('@prisma/adapter-pg')
+    const { Pool } = await import('pg')
+    
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+    })
+    
+    const adapter = new PrismaPg(pool)
+    prisma = new PrismaClient({ adapter })
+  }
+} else {
+  // In development, use the adapter approach
+  const { PrismaPg } = await import('@prisma/adapter-pg')
+  const { Pool } = await import('pg')
+  
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
   })
+  
+  const adapter = new PrismaPg(pool)
+  prisma = new PrismaClient({ adapter })
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+export { prisma }

@@ -3,7 +3,9 @@
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "node",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "target": "ES2017"
   },
-  "include": ["prisma/**/*.ts"]
+  "include": ["prisma/**/*.ts"],
+  "exclude": ["node_modules", ".next"]
 }

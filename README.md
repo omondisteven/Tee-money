@@ -96,6 +96,63 @@ https://github.com/omondisteven/Tee-money
 
 ---
 
+# 🏗️ Project Structure
+
+```text
+teemoney/
+├── src/
+│   ├── app/
+│   │   ├── (protected)/           # Protected routes
+│   │   │   ├── dashboard/
+│   │   │   ├── transactions/
+│   │   │   ├── budgets/
+│   │   │   └── goals/
+│   │   ├── api/                   # API routes
+│   │   │   ├── auth/
+│   │   │   ├── transactions/
+│   │   │   ├── budgets/
+│   │   │   └── goals/
+│   │   ├── login/
+│   │   ├── register/
+│   │   └── layout.tsx
+│   ├── components/                # Reusable UI components
+│   │   ├── layout/
+│   │   ├── transactions/
+│   │   ├── budgets/
+│   │   └── goals/
+│   ├── lib/                       # Core libraries & utilities
+│   │   ├── prisma.ts
+│   │   ├── jwt.ts
+│   │   └── auth.ts
+│   ├── types/                     # TypeScript type definitions
+│   └── utils/                     # Helper functions
+├── prisma/
+│   ├── schema.prisma              # Database schema
+│   └── seed.ts                    # Database seed script
+├── .env.local                     # Environment variables
+├── next.config.js
+├── tailwind.config.js
+├── tsconfig.json
+└── package.json
+```
+
+### 📂 Folder Overview
+
+| Folder/File | Purpose |
+|--------------|---------|
+| **src/app** | Next.js App Router pages, layouts and API routes |
+| **src/app/(protected)** | Authenticated pages requiring user login |
+| **src/components** | Reusable React UI components |
+| **src/lib** | Database, authentication and shared application logic |
+| **src/types** | Shared TypeScript interfaces and types |
+| **src/utils** | Utility and helper functions |
+| **prisma/schema.prisma** | Prisma database schema and models |
+| **prisma/seed.ts** | Database seed script for sample data |
+| **.env.local** | Local environment configuration |
+| **package.json** | Project dependencies and scripts |
+
+---
+
 # 🛠 Installation
 
 ## Prerequisites

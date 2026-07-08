@@ -1,11 +1,12 @@
-<!-- README.md Content -->
+<!-- README.md -->
+
 <h1 align="center">
-  <br>
   💰 TeeMoney - Personal Finance Manager
-  <br>
 </h1>
 
-<h4 align="center">Smart Financial Management at Your Fingertips</h4>
+<h4 align="center">
+  Smart Financial Management at Your Fingertips
+</h4>
 
 <p align="center">
   <a href="https://nextjs.org/">
@@ -30,115 +31,210 @@
   <a href="#-key-features">Features</a> •
   <a href="#-tech-stack">Tech Stack</a> •
   <a href="#-installation">Installation</a> •
-  <a href="#-api-endpoints">API</a> •
   <a href="#-contributing">Contributing</a> •
   <a href="#-license">License</a>
 </p>
 
 ---
 
-## 📱 About TeeMoney
+# 📱 About TeeMoney
 
-**TeeMoney** is a modern, mobile-responsive personal finance management application built with Next.js. It helps you track your income, expenses, budgets, and financial goals with an intuitive and beautiful interface.
+**TeeMoney** is a modern, mobile-responsive personal finance management application built with **Next.js**. It helps you track your income, expenses, budgets, and financial goals with an intuitive and beautiful interface.
 
-The project is live on GitHub: [https://github.com/omondisteven/Tee-money](https://github.com/omondisteven/Tee-money)
+🔗 **GitHub Repository:**  
+https://github.com/omondisteven/Tee-money
 
 ---
 
-## ✨ Key Features
+# ✨ Key Features
 
 | Feature | Description |
 |---------|-------------|
-| **💰 All-in-one Money Tracker** | Record income and daily expenses by category for accurate financial insights |
-| **📊 Budget Planner & Tracker** | Set spending limits, monitor budgets, and view progress with charts & graphs |
-| **🎯 Savings & Goal Planner** | Track savings growth, set financial goals, and stay motivated |
-| **📈 Cash Flow Manager** | Understand your income vs. expenses to improve financial health |
-| **⚡ Quick Expense Tracker** | Log daily spending in seconds with a clean, user-friendly interface |
-| **🔐 Secure Authentication** | JWT-based authentication with bcrypt password hashing |
-| **📱 Mobile-First Design** | Optimized for mobile devices with a responsive layout |
+| 💰 **All-in-one Money Tracker** | Record income and daily expenses by category for accurate financial insights. |
+| 📊 **Budget Planner & Tracker** | Set spending limits, monitor budgets, and visualize progress with charts and graphs. |
+| 🎯 **Savings & Goal Planner** | Track savings growth, set financial goals, and stay motivated. |
+| 📈 **Cash Flow Manager** | Understand income versus expenses to improve financial health. |
+| ⚡ **Quick Expense Tracker** | Log daily spending in seconds with a clean, user-friendly interface. |
+| 🔐 **Secure Authentication** | JWT-based authentication with bcrypt password hashing. |
+| 📱 **Mobile-First Design** | Fully responsive layout optimized for desktop, tablet, and mobile devices. |
 
 ---
 
-## 🚀 Tech Stack
+# 🚀 Tech Stack
 
 <details>
-<summary><b>Frontend</b></summary>
+<summary><strong>Frontend</strong></summary>
 
-- **Next.js 14** - React framework with App Router
-- **TypeScript** - Type-safe JavaScript
-- **Tailwind CSS** - Utility-first CSS framework
-- **Chart.js** - Interactive charts and graphs
-- **React Icons** - Beautiful icon library
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- Chart.js
+- React Icons
+
 </details>
 
 <details>
-<summary><b>Backend</b></summary>
+<summary><strong>Backend</strong></summary>
 
-- **Next.js API Routes** - Serverless API endpoints
-- **Prisma ORM** - Type-safe database client
-- **PostgreSQL** - Relational database
-- **JWT** - JSON Web Tokens for authentication
-- **bcryptjs** - Password hashing
+- Next.js API Routes
+- Prisma ORM
+- PostgreSQL
+- JWT Authentication
+- bcryptjs
+
 </details>
 
 <details>
-<summary><b>Libraries & Tools</b></summary>
+<summary><strong>Libraries & Tools</strong></summary>
 
-- **React Hook Form** - Form handling
-- **React Toastify** - Toast notifications
-- **Zod** - Schema validation
-- **React Responsive** - Responsive design utilities
+- React Hook Form
+- React Toastify
+- Zod
+- React Responsive
+
 </details>
 
 ---
 
-## 🛠️ Installation
+# 🛠 Installation
 
-### Prerequisites
+## Prerequisites
 
 - Node.js 18+
 - PostgreSQL 14+
-- npm or yarn
+- npm or Yarn
 
-### Step-by-Step Setup
+## 1. Clone the repository
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/omondisteven/Tee-money.git
-   cd Tee-money
+```bash
+git clone https://github.com/omondisteven/Tee-money.git
+cd Tee-money
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
+## 2. Install dependencies
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env.local
+```bash
+npm install
+```
 
-4. *Then edit .env.local with your credentials:*
-   ```env
-   DATABASE_URL="postgresql://username:password@localhost:5432/teemoney"
-   JWT_SECRET="your-super-secret-jwt-key"
+## 3. Configure environment variables
 
-5. **Set up the database**
-   ```bash
-# Create the database
-   createdb teemoney
-   
-# Push the schema
-   npx prisma db push
+```bash
+cp .env.example .env.local
+```
 
-# Generate Prisma client
-  npx prisma generate
+Edit **.env.local**
 
-# (Optional) Seed the database
-  npm run db:seed
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/teemoney"
+JWT_SECRET="your-super-secret-jwt-key"
+```
 
-6. **Run the development server**
-   ```bash
-   npm run dev
+## 4. Set up the database
 
-6. **Open the application**
-   Visit http://localhost:3000
+Create the database:
 
-**🤝 Contributing**
+```bash
+createdb teemoney
+```
+
+Push the schema:
+
+```bash
+npx prisma db push
+```
+
+Generate the Prisma Client:
+
+```bash
+npx prisma generate
+```
+
+(Optional) Seed the database:
+
+```bash
+npm run db:seed
+```
+
+## 5. Start the development server
+
+```bash
+npm run dev
+```
+
+## 6. Open the application
+
+Visit:
+
+```
+http://localhost:3000
+```
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome!
+
+1. Fork the repository.
+2. Create your feature branch.
+
+```bash
+git checkout -b feature/AmazingFeature
+```
+
+3. Commit your changes.
+
+```bash
+git commit -m "Add some AmazingFeature"
+```
+
+4. Push to your branch.
+
+```bash
+git push origin feature/AmazingFeature
+```
+
+5. Open a Pull Request.
+
+---
+
+# 📝 License
+
+This project is licensed under the **MIT License**. See the **LICENSE** file for details.
+
+---
+
+# 👨‍💻 Developer
+
+**Steven Omondi**
+
+📧 Email: omondisteven@gmail.com
+
+🐙 GitHub: https://github.com/omondisteven
+
+---
+
+# 🙏 Acknowledgments
+
+- Next.js for the amazing React framework.
+- Prisma for the excellent ORM.
+- Tailwind CSS for the utility-first CSS framework.
+- Chart.js for beautiful charts.
+- Everyone who contributes to making this project better.
+
+---
+
+<p align="center">
+  <strong>Made with ❤️ by Steven Omondi</strong>
+
+  <br><br>
+
+  <a href="https://github.com/omondisteven/Tee-money/issues">🐞 Report Bug</a>
+  &nbsp; | &nbsp;
+  <a href="https://github.com/omondisteven/Tee-money/issues">✨ Request Feature</a>
+
+  <br><br>
+
+  ⭐ If you find this project useful, please consider starring the repository!
+</p>

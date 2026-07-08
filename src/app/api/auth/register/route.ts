@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { signToken } from '@/lib/jwt'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name } = await request.json()
+    // Parse request body
+    let body
+    try {
+      body = await request.json()
+    } catch (e) {
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      )
+    }
+
+    const { email, password, name } = body
 
     // Validate input
     if (!email || !password || !name) {
@@ -22,10 +32,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Test database connection first
+    try {
+      await prisma.$connect()
+    } catch (dbError: any) {
+      console.error('Database connection error:', dbError)
+      return NextResponse.json(
+        { error: 'Database connection failed. Please try again.' },
+        { status: 500 }
+      )
+    }
+
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    })
+    let existingUser
+    try {
+      existingUser = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+      })
+    } catch (findError: any) {
+      console.error('Error finding user:', findError)
+      return NextResponse.json(
+        { error: 'Error checking user existence' },
+        { status: 500 }
+      )
+    }
 
     if (existingUser) {
       return NextResponse.json(
@@ -35,18 +65,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10)
+    let hashedPassword
+    try {
+      hashedPassword = await bcrypt.hash(password, 10)
+    } catch (hashError: any) {
+      console.error('Error hashing password:', hashError)
+      return NextResponse.json(
+        { error: 'Error processing password' },
+        { status: 500 }
+      )
+    }
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
-        email: email.toLowerCase(),
-        password: hashedPassword,
-        name: name.trim(),
-      },
-    })
+    let user
+    try {
+      user = await prisma.user.create({
+        data: {
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          name: name.trim(),
+        },
+      })
+    } catch (createError: any) {
+      console.error('Error creating user:', createError)
+      return NextResponse.json(
+        { error: 'Failed to create user account' },
+        { status: 500 }
+      )
+    }
 
-    // Return success without auto-login
+    // Return success
     return NextResponse.json({
       success: true,
       message: 'Account created successfully! Please login.',
@@ -57,10 +105,13 @@ export async function POST(request: NextRequest) {
       },
     }, { status: 201 })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error)
     return NextResponse.json(
-      { error: 'Internal server error. Please try again later.' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     )
   }

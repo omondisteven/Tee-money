@@ -1,35 +1,28 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
 
-// For Prisma v7, we need to handle the constructor differently
-let prisma: PrismaClient
+const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
-if (process.env.NODE_ENV === 'production') {
-  // In production, try without adapter first
-  try {
-    prisma = new PrismaClient()
-  } catch (error) {
-    // If that fails, try with the adapter
-    const { PrismaPg } = await import('@prisma/adapter-pg')
-    const { Pool } = await import('pg')
-    
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-    })
-    
-    const adapter = new PrismaPg(pool)
-    prisma = new PrismaClient({ adapter })
-  }
-} else {
-  // In development, use the adapter approach
-  const { PrismaPg } = await import('@prisma/adapter-pg')
-  const { Pool } = await import('pg')
-  
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+// Parse the connection string for Vercel PostgreSQL
+const connectionString = process.env.DATABASE_URL || ''
+
+// Create a connection pool with SSL configuration for Vercel
+const pool = new Pool({
+  connectionString,
+  ssl: {
+    rejectUnauthorized: false, // Required for Vercel PostgreSQL
+  },
+})
+
+// Create the Prisma adapter
+const adapter = new PrismaPg(pool)
+
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
-  
-  const adapter = new PrismaPg(pool)
-  prisma = new PrismaClient({ adapter })
-}
 
-export { prisma }
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma

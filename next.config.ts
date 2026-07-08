@@ -4,6 +4,10 @@ const nextConfig = {
     domains: [],
   },
   reactStrictMode: true,
+  swcMinify: true,
+  experimental: {
+    optimizeCss: true,
+  },
 }
 
 module.exports = nextConfig

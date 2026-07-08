@@ -7,48 +7,60 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password, name } = await request.json()
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
-
-    if (existingUser) {
+    // Validate input
+    if (!email || !password || !name) {
       return NextResponse.json(
-        { error: 'User already exists' },
+        { error: 'All fields are required' },
         { status: 400 }
       )
     }
 
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password must be at least 6 characters' },
+        { status: 400 }
+      )
+    }
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    })
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'User already exists. Please login instead.' },
+        { status: 400 }
+      )
+    }
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
+    // Create user
     const user = await prisma.user.create({
       data: {
-        email,
+        email: email.toLowerCase(),
         password: hashedPassword,
-        name,
+        name: name.trim(),
       },
     })
 
-    const token = signToken(user.id, user.email)
-
-    const response = NextResponse.json({
+    // Return success without auto-login
+    return NextResponse.json({
+      success: true,
+      message: 'Account created successfully! Please login.',
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
       },
-    })
+    }, { status: 201 })
 
-    response.cookies.set('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60,
-    })
-
-    return response
   } catch (error) {
+    console.error('Registration error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error. Please try again later.' },
       { status: 500 }
     )
   }

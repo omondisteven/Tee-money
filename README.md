@@ -106,3 +106,39 @@ The project is live on GitHub: [https://github.com/omondisteven/Tee-money](https
    ```bash
    git clone https://github.com/omondisteven/Tee-money.git
    cd Tee-money
+
+2. **Install dependencies**
+   ```bash
+   npm install
+
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env.local
+
+4. *Then edit .env.local with your credentials:*
+   ```env
+   DATABASE_URL="postgresql://username:password@localhost:5432/teemoney"
+   JWT_SECRET="your-super-secret-jwt-key"
+
+5. **Set up the database**
+   ```bash
+# Create the database
+   createdb teemoney
+   
+# Push the schema
+   npx prisma db push
+
+# Generate Prisma client
+  npx prisma generate
+
+# (Optional) Seed the database
+  npm run db:seed
+
+6. **Run the development server**
+   ```bash
+   npm run dev
+
+6. **Open the application**
+   Visit http://localhost:3000
+
+**🤝 Contributing**

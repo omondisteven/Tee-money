@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { verifyToken } from './jwt'
-import { prisma } from './prisma'
+import { prisma } from './db'
 
 export const getUserIdFromRequest = async (request: NextRequest) => {
   const token = request.cookies.get('token')?.value

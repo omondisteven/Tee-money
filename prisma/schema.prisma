@@ -8,59 +8,77 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id           String         @id @default(cuid())
+  email        String         @unique
+  password     String
+  name         String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  
   transactions Transaction[]
   budgets      Budget[]
   goals        Goal[]
+  categories   Category[]
+}
+
+model Category {
+  id        String         @id @default(cuid())
+  name      String
+  type      TransactionType
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isDefault Boolean        @default(false)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  transactions Transaction[]
+
+  @@unique([userId, name, type])
 }
 
 model Transaction {
-  id          String          @id @default(cuid())
+  id          String         @id @default(cuid())
   userId      String
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   type        TransactionType
   category    String
+  categoryId  String?
+  categoryRef Category?      @relation(fields: [categoryId], references: [id])
   amount      Float
   description String?
-  date        DateTime        @default(now())
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  date        DateTime       @default(now())
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   @@index([userId])
 }
 
 model Budget {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category  String
-  amount    Float
-  spent     Float    @default(0)
-  month     Int      @default(0)
-  year      Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    String
+  amount      Float
+  spent       Float          @default(0)
+  month       Int            @default(0)
+  year        Int
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   @@unique([userId, category, month, year])
 }
 
 model Goal {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name          String
-  targetAmount  Float
-  currentAmount Float    @default(0)
-  deadline      DateTime
-  icon          String?  @default("🎯")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  targetAmount Float
+  currentAmount Float       @default(0)
+  deadline    DateTime
+  icon        String?        @default("🎯")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }
 
 enum TransactionType {

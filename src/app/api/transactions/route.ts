@@ -67,11 +67,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Find or create category
+    let categoryRecord = await prisma.category.findFirst({
+      where: {
+        userId,
+        name: category,
+        type,
+      },
+    })
+
+    if (!categoryRecord) {
+      // Create new category if it doesn't exist
+      categoryRecord = await prisma.category.create({
+        data: {
+          name: category,
+          type,
+          userId,
+          isDefault: false,
+        },
+      })
+    }
+
     const transaction = await prisma.transaction.create({
       data: {
         userId,
         type,
         category,
+        categoryId: categoryRecord.id,
         amount: parseFloat(amount),
         description,
         date: date ? new Date(date) : new Date(),

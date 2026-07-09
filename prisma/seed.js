@@ -9,14 +9,17 @@ const defaultCategories = {
 }
 
 async function main() {
-  console.log('Starting seed...')
+  console.log('Starting seed in APPEND mode...')
 
+  // 1. Create or update demo user
   const hashedPassword = await bcrypt.hash('password123', 10)
-
-  // Create or update demo user
+  
   const user = await prisma.user.upsert({
     where: { email: 'demo@example.com' },
-    update: {},
+    update: {
+      // Only update name if it's different
+      name: 'Demo User',
+    },
     create: {
       email: 'demo@example.com',
       password: hashedPassword,
@@ -24,43 +27,57 @@ async function main() {
     },
   })
 
-  console.log(`User created/updated: ${user.email}`)
+  console.log(`User: ${user.email} (ID: ${user.id})`)
 
-  // Create default categories for the user
-  let categoryCount = 0
+  // 2. Append default categories without duplicates
+  let createdCount = 0
+  let skippedCount = 0
+
   for (const [type, categories] of Object.entries(defaultCategories)) {
     for (const name of categories) {
       try {
-        await prisma.category.upsert({
+        // Check if category already exists for this user
+        const existing = await prisma.category.findFirst({
           where: {
-            userId_name_type: {
-              userId: user.id,
-              name,
-              type: type,
-            },
+            userId: user.id,
+            name: name,
+            type: type,
           },
-          update: {},
-          create: {
+        })
+
+        if (existing) {
+          // Category exists - skip it
+          skippedCount++
+          console.log(`  ⏭️ Skipping existing: ${type} / ${name}`)
+          continue
+        }
+
+        // Category doesn't exist - create it
+        await prisma.category.create({
+          data: {
             name,
             type: type,
             userId: user.id,
             isDefault: true,
           },
         })
-        categoryCount++
+        createdCount++
+        console.log(`  ✅ Created: ${type} / ${name}`)
       } catch (error) {
-        console.error(`Error creating category ${name}:`, error.message)
+        console.error(`  ❌ Error creating category ${name}:`, error.message)
       }
     }
   }
 
-  console.log(`Created ${categoryCount} default categories`)
-  console.log('Seed completed successfully!')
+  console.log(`\n📊 Summary:`)
+  console.log(`  ✅ Created: ${createdCount} categories`)
+  console.log(`  ⏭️  Skipped: ${skippedCount} existing categories`)
+  console.log('✨ Seed completed successfully!')
 }
 
 main()
   .catch((e) => {
-    console.error('Seed failed:', e)
+    console.error('❌ Seed failed:', e)
     process.exit(1)
   })
   .finally(async () => {

@@ -196,7 +196,7 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
         </div>
       </div>
 
-      {/* Category Grid with Random Colors */}
+      {/* Category Grid with Permanent Colors */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Category
@@ -216,18 +216,23 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
                   setIsAddingCategory(false)
                   setNewCategoryName('')
                 }}
-                className="py-2 px-3 rounded-xl text-sm font-medium transition-all relative border-2"
+                className="py-2 px-3 rounded-xl text-sm font-medium transition-all border-2 shadow-sm hover:shadow-md hover:scale-105 active:scale-95"
                 style={{
-                  backgroundColor: isSelected ? bgColor : 'transparent',
-                  color: isSelected ? textColor : '#6B7280',
-                  borderColor: isSelected ? bgColor : '#E5E7EB',
+                  backgroundColor: bgColor,
+                  color: textColor,
+                  borderColor: isSelected ? '#ffffff' : bgColor,
+                  boxShadow: isSelected ? '0 0 0 2px #3B82F6, 0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
+                  transform: isSelected ? 'scale(1.02)' : 'scale(1)',
                 }}
               >
-                {cat.name}
+                <span className="flex items-center justify-center gap-1">
+                  {cat.name}
+                  {isSelected && (
+                    <span className="text-[10px]">✓</span>
+                  )}
+                </span>
                 {cat.isDefault && (
-                  <span className={`absolute -top-1 -right-1 text-[8px] bg-gray-400 text-white rounded-full px-1 ${
-                    isSelected ? 'opacity-80' : ''
-                  }`}>
+                  <span className="absolute -top-1 -right-1 text-[8px] bg-white/80 text-gray-700 rounded-full px-1">
                     D
                   </span>
                 )}

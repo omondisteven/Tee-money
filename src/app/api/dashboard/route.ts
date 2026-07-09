@@ -45,6 +45,14 @@ export async function GET(request: NextRequest) {
         return acc
       }, {} as Record<string, number>)
 
+    // Get income by category
+    const incomeByCategory = transactions
+      .filter(t => t.type === 'INCOME')
+      .reduce((acc, t) => {
+        acc[t.category] = (acc[t.category] || 0) + t.amount
+        return acc
+      }, {} as Record<string, number>)
+
     // Get recent transactions
     const recentTransactions = await prisma.transaction.findMany({
       where: { userId },
@@ -66,6 +74,9 @@ export async function GET(request: NextRequest) {
       where: { userId },
     })
 
+    // Get monthly data for the chart (last 6 months)
+    const monthlyData = await getMonthlyData(userId)
+
     return NextResponse.json({
       summary: {
         totalIncome,
@@ -73,14 +84,54 @@ export async function GET(request: NextRequest) {
         balance: totalIncome - totalExpenses,
       },
       expensesByCategory,
+      incomeByCategory,
       recentTransactions,
       budgets,
       goals,
+      monthlyData,
     })
   } catch (error) {
+    console.error('Dashboard error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )
   }
+}
+
+async function getMonthlyData(userId: string) {
+  const months = []
+  const now = new Date()
+  
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1)
+    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+    
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        userId,
+        date: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+      },
+    })
+    
+    const income = transactions
+      .filter(t => t.type === 'INCOME')
+      .reduce((sum, t) => sum + t.amount, 0)
+    
+    const expenses = transactions
+      .filter(t => t.type === 'EXPENSE')
+      .reduce((sum, t) => sum + t.amount, 0)
+    
+    months.push({
+      month: date.toLocaleString('default', { month: 'short' }),
+      income,
+      expenses,
+    })
+  }
+  
+  return months
 }

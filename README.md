@@ -183,7 +183,7 @@ cp .env.example .env.local
 Edit **.env.local**
 
 ```env
-DB_PRISMA_DATABASE_URL="postgresql://username:password@localhost:5432/teemoney"
+TM_PRISMA_DATABASE_URL="postgresql://username:password@localhost:5432/teemoney"
 JWT_SECRET="your-super-secret-jwt-key"
 ```
 

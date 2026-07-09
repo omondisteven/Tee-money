@@ -65,18 +65,25 @@ export default function Sidebar() {
             </Link>
           )
         })}
+
+        {/* Profile Link */}
+        <Link
+          href="/profile"
+          className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
+            pathname === '/profile'
+              ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-sm'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`}
+        >
+          <FiUser className={`w-5 h-5 ${pathname === '/profile' ? 'text-blue-600' : ''}`} />
+          <span className="font-medium">Profile</span>
+          {pathname === '/profile' && (
+            <div className="ml-auto w-1.5 h-8 bg-blue-600 rounded-full"></div>
+          )}
+        </Link>
       </nav>
 
       <div className="p-4 border-t border-gray-100">
-        <div className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-gray-50 mb-3">
-          <div className="w-9 h-9 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-            <FiUser className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-800">User</p>
-            <p className="text-xs text-gray-500">Free Plan</p>
-          </div>
-        </div>
         <button
           onClick={handleLogout}
           className="flex items-center space-x-3 px-4 py-3 w-full rounded-xl text-red-600 hover:bg-red-50 transition-all"

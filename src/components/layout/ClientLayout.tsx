@@ -56,10 +56,26 @@ export default function ClientLayout({
   // For authenticated pages, render with full layout
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar />
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 transform ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } md:translate-x-0 transition-transform duration-300 ease-in-out`}>
+        <Sidebar />
+      </div>
       
       <div className="flex-1 flex flex-col md:ml-64">
-        <Topbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <Topbar 
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
+          isMobileMenuOpen={sidebarOpen}
+        />
         
         <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <div className="p-4 md:p-6">

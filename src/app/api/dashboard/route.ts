@@ -14,11 +14,16 @@ export async function GET(request: NextRequest) {
     }
 
     const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth()
 
-    // Get all transactions for this month
-    const transactions = await prisma.transaction.findMany({
+    // ========================
+    // 1. CURRENT MONTH DATA
+    // ========================
+    const startOfMonth = new Date(currentYear, currentMonth, 1)
+    const endOfMonth = new Date(currentYear, currentMonth + 1, 0)
+
+    const monthlyTransactions = await prisma.transaction.findMany({
       where: {
         userId,
         date: {
@@ -28,54 +33,79 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Calculate totals
-    const totalIncome = transactions
+    const totalIncome = monthlyTransactions
       .filter(t => t.type === 'INCOME')
       .reduce((sum, t) => sum + t.amount, 0)
 
-    const totalExpenses = transactions
+    const totalExpenses = monthlyTransactions
       .filter(t => t.type === 'EXPENSE')
       .reduce((sum, t) => sum + t.amount, 0)
 
-    // Get expenses by category
-    const expensesByCategory = transactions
+    // Expenses by category (current month)
+    const expensesByCategory = monthlyTransactions
       .filter(t => t.type === 'EXPENSE')
       .reduce((acc, t) => {
         acc[t.category] = (acc[t.category] || 0) + t.amount
         return acc
       }, {} as Record<string, number>)
 
-    // Get income by category
-    const incomeByCategory = transactions
-      .filter(t => t.type === 'INCOME')
-      .reduce((acc, t) => {
-        acc[t.category] = (acc[t.category] || 0) + t.amount
-        return acc
-      }, {} as Record<string, number>)
+    // ========================
+    // 2. YEARLY DATA (Last 6 months)
+    // ========================
+    const monthlyData = []
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(currentYear, currentMonth - i, 1)
+      const startOfMonthLoop = new Date(date.getFullYear(), date.getMonth(), 1)
+      const endOfMonthLoop = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+      
+      const transactions = await prisma.transaction.findMany({
+        where: {
+          userId,
+          date: {
+            gte: startOfMonthLoop,
+            lte: endOfMonthLoop,
+          },
+        },
+      })
+      
+      const income = transactions
+        .filter(t => t.type === 'INCOME')
+        .reduce((sum, t) => sum + t.amount, 0)
+      
+      const expenses = transactions
+        .filter(t => t.type === 'EXPENSE')
+        .reduce((sum, t) => sum + t.amount, 0)
+      
+      monthlyData.push({
+        month: date.toLocaleString('default', { month: 'short' }),
+        income,
+        expenses,
+      })
+    }
 
-    // Get recent transactions
+    // ========================
+    // 3. RECENT TRANSACTIONS
+    // ========================
     const recentTransactions = await prisma.transaction.findMany({
       where: { userId },
       orderBy: { date: 'desc' },
       take: 5,
     })
 
-    // Get budgets
+    // ========================
+    // 4. BUDGETS & GOALS
+    // ========================
     const budgets = await prisma.budget.findMany({
       where: {
         userId,
-        month: now.getMonth(),
-        year: now.getFullYear(),
+        month: currentMonth,
+        year: currentYear,
       },
     })
 
-    // Get goals
     const goals = await prisma.goal.findMany({
       where: { userId },
     })
-
-    // Get monthly data for the chart (last 6 months)
-    const monthlyData = await getMonthlyData(userId)
 
     return NextResponse.json({
       summary: {
@@ -84,7 +114,6 @@ export async function GET(request: NextRequest) {
         balance: totalIncome - totalExpenses,
       },
       expensesByCategory,
-      incomeByCategory,
       recentTransactions,
       budgets,
       goals,
@@ -97,41 +126,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
-
-async function getMonthlyData(userId: string) {
-  const months = []
-  const now = new Date()
-  
-  for (let i = 5; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1)
-    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0)
-    
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        userId,
-        date: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
-      },
-    })
-    
-    const income = transactions
-      .filter(t => t.type === 'INCOME')
-      .reduce((sum, t) => sum + t.amount, 0)
-    
-    const expenses = transactions
-      .filter(t => t.type === 'EXPENSE')
-      .reduce((sum, t) => sum + t.amount, 0)
-    
-    months.push({
-      month: date.toLocaleString('default', { month: 'short' }),
-      income,
-      expenses,
-    })
-  }
-  
-  return months
 }

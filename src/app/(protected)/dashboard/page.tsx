@@ -6,10 +6,7 @@ import {
   FiTrendingDown, 
   FiDollarSign,
   FiPlus,
-  FiHome,
   FiPieChart,
-  FiTarget,
-  FiSettings,
   FiGift
 } from 'react-icons/fi'
 import Link from 'next/link'
@@ -42,7 +39,6 @@ interface DashboardData {
     balance: number
   }
   expensesByCategory: Record<string, number>
-  incomeByCategory: Record<string, number>
   recentTransactions: any[]
   budgets: any[]
   goals: any[]
@@ -97,20 +93,39 @@ export default function DashboardPage() {
     )
   }
 
-  const { summary, expensesByCategory, incomeByCategory, recentTransactions, monthlyData } = data
+  const { summary, expensesByCategory, recentTransactions, monthlyData } = data
 
-  // Prepare expense chart data
+  // Current month and year for display
+  const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
+
+  // Expense chart data (current month)
   const expenseCategories = Object.keys(expensesByCategory)
   const expenseAmounts = Object.values(expensesByCategory)
   const hasExpenses = expenseCategories.length > 0 && expenseAmounts.some(a => a > 0)
 
-  // Prepare income chart data
-  const incomeCategories = Object.keys(incomeByCategory)
-  const incomeAmounts = Object.values(incomeByCategory)
-  const hasIncome = incomeCategories.length > 0 && incomeAmounts.some(a => a > 0)
-
-  // Prepare monthly chart data
+  // Monthly chart data (last 6 months)
   const hasMonthlyData = monthlyData && monthlyData.length > 0
+  const monthlyBarData = {
+    labels: monthlyData?.map(d => d.month) || [],
+    datasets: [
+      {
+        label: 'Income',
+        data: monthlyData?.map(d => d.income) || [],
+        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+        borderColor: 'rgb(34, 197, 94)',
+        borderWidth: 2,
+        borderRadius: 6,
+      },
+      {
+        label: 'Expenses',
+        data: monthlyData?.map(d => d.expenses) || [],
+        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+        borderColor: 'rgb(239, 68, 68)',
+        borderWidth: 2,
+        borderRadius: 6,
+      },
+    ],
+  }
 
   const expenseBarData = {
     labels: expenseCategories,
@@ -118,32 +133,10 @@ export default function DashboardPage() {
       {
         label: 'Expenses',
         data: expenseAmounts,
-        backgroundColor: 'rgba(239, 68, 68, 0.6)',
+        backgroundColor: 'rgba(239, 68, 68, 0.7)',
         borderColor: 'rgb(239, 68, 68)',
         borderWidth: 2,
-        borderRadius: 8,
-      },
-    ],
-  }
-
-  const monthlyBarData = {
-    labels: monthlyData?.map(d => d.month) || [],
-    datasets: [
-      {
-        label: 'Income',
-        data: monthlyData?.map(d => d.income) || [],
-        backgroundColor: 'rgba(34, 197, 94, 0.6)',
-        borderColor: 'rgb(34, 197, 94)',
-        borderWidth: 2,
-        borderRadius: 8,
-      },
-      {
-        label: 'Expenses',
-        data: monthlyData?.map(d => d.expenses) || [],
-        backgroundColor: 'rgba(239, 68, 68, 0.6)',
-        borderColor: 'rgb(239, 68, 68)',
-        borderWidth: 2,
-        borderRadius: 8,
+        borderRadius: 6,
       },
     ],
   }
@@ -168,9 +161,6 @@ export default function DashboardPage() {
       },
     ],
   }
-
-  // Get current month
-  const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
 
   return (
     <div className="pb-20">
@@ -238,11 +228,12 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Monthly Income vs Expenses Chart */}
+      {/* Monthly Income vs Expenses Chart (Last 6 Months) */}
       {hasMonthlyData && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
-          <h3 className="font-semibold text-gray-800 mb-3">Income vs Expenses</h3>
-          <div className="h-48">
+          <h3 className="font-semibold text-gray-800 mb-1">Income vs Expenses</h3>
+          <p className="text-xs text-gray-400 mb-3">Last 6 months</p>
+          <div className="h-52">
             <Bar
               data={monthlyBarData}
               options={{
@@ -255,9 +246,7 @@ export default function DashboardPage() {
                       usePointStyle: true,
                       boxWidth: 8,
                       padding: 12,
-                      font: {
-                        size: 11,
-                      },
+                      font: { size: 11 },
                     },
                   },
                 },
@@ -265,9 +254,7 @@ export default function DashboardPage() {
                   y: {
                     beginAtZero: true,
                     ticks: {
-                      callback: function(value) {
-                        return '$' + value
-                      },
+                      callback: (value) => '$' + value,
                     },
                   },
                 },
@@ -277,11 +264,12 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Expense Breakdown Charts */}
+      {/* Expense Breakdown (Current Month) */}
       {hasExpenses && (
         <div className="grid grid-cols-1 gap-4 mb-4">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-            <h3 className="font-semibold text-gray-800 mb-3">Expense Breakdown</h3>
+            <h3 className="font-semibold text-gray-800 mb-1">Expense Breakdown</h3>
+            <p className="text-xs text-gray-400 mb-3">{currentMonth}</p>
             <div className="h-48">
               <Bar
                 data={expenseBarData}
@@ -289,17 +277,13 @@ export default function DashboardPage() {
                   responsive: true,
                   maintainAspectRatio: false,
                   plugins: {
-                    legend: {
-                      display: false,
-                    },
+                    legend: { display: false },
                   },
                   scales: {
                     y: {
                       beginAtZero: true,
                       ticks: {
-                        callback: function(value) {
-                          return '$' + value
-                        },
+                        callback: (value) => '$' + value,
                       },
                     },
                   },
@@ -309,8 +293,9 @@ export default function DashboardPage() {
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-            <h3 className="font-semibold text-gray-800 mb-3">Category Distribution</h3>
-            <div className="h-48 flex items-center justify-center">
+            <h3 className="font-semibold text-gray-800 mb-1">Category Distribution</h3>
+            <p className="text-xs text-gray-400 mb-3">{currentMonth}</p>
+            <div className="h-52 flex items-center justify-center">
               <div className="w-44 h-44">
                 <Doughnut
                   data={doughnutChartData}
@@ -324,9 +309,7 @@ export default function DashboardPage() {
                           padding: 8,
                           usePointStyle: true,
                           pointStyle: 'circle',
-                          font: {
-                            size: 10,
-                          },
+                          font: { size: 10 },
                         },
                       },
                     },
@@ -339,7 +322,7 @@ export default function DashboardPage() {
       )}
 
       {/* No Data Message */}
-      {!hasExpenses && !hasIncome && (
+      {!hasExpenses && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center mb-4">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FiPieChart className="w-10 h-10 text-gray-400" />

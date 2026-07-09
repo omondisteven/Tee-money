@@ -98,37 +98,37 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Action Buttons */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <Link
-          href="/transactions?type=income"
-          className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col items-center hover:shadow-md transition-shadow"
-        >
-          <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mb-2">
-            <FiTrendingUp className="w-6 h-6 text-green-600" />
-          </div>
-          <span className="text-xs font-medium text-gray-700">Income</span>
-        </Link>
-        
-        <Link
-          href="/transactions?type=expense"
-          className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col items-center hover:shadow-md transition-shadow"
-        >
-          <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-2">
-            <FiTrendingDown className="w-6 h-6 text-red-600" />
-          </div>
-          <span className="text-xs font-medium text-gray-700">Expend</span>
-        </Link>
-        
-        <Link
-          href="/transactions/new"
-          className="bg-blue-600 rounded-2xl p-4 shadow-sm flex flex-col items-center hover:bg-blue-700 transition-colors"
-        >
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
-            <FiPlus className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-xs font-medium text-white">Add</span>
-        </Link>
-      </div>
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <Link
+            href="/transactions?type=income"
+            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col items-center hover:shadow-md transition-shadow"
+          >
+            <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mb-2">
+              <FiTrendingUp className="w-6 h-6 text-green-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-700">Income</span>
+          </Link>
+          
+          <Link
+            href="/transactions?type=expense"
+            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col items-center hover:shadow-md transition-shadow"
+          >
+            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-2">
+              <FiTrendingDown className="w-6 h-6 text-red-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-700">Expend</span>
+          </Link>
+          
+          <Link
+            href="/transactions"
+            className="bg-blue-600 rounded-2xl p-4 shadow-sm flex flex-col items-center hover:bg-blue-700 transition-colors"
+          >
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
+              <FiPlus className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xs font-medium text-white">Add</span>
+          </Link>
+        </div>
 
       {/* Income vs Expenses Chart Placeholder */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">

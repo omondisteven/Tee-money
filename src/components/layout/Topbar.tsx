@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FiMenu, FiUser, FiBell, FiSearch } from 'react-icons/fi'
+import { FiMenu, FiUser, FiBell } from 'react-icons/fi'
 
 interface User {
   name: string
@@ -43,11 +43,13 @@ export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
           >
             <FiMenu className="w-5 h-5 text-gray-600" />
           </button>
-          <div className="hidden md:block">
+          <div>
             <h2 className="text-lg font-semibold text-gray-800">
               {getGreeting()}, {user?.name || 'User'} 👋
             </h2>
-            <p className="text-sm text-gray-500">Welcome back to your dashboard</p>
+            <p className="text-sm text-gray-500 hidden sm:block">
+              Welcome back to your dashboard
+            </p>
           </div>
         </div>
 
@@ -61,10 +63,6 @@ export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
               <span className="text-white font-medium text-sm">
                 {user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </span>
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-sm font-medium text-gray-800">{user?.name || 'User'}</p>
-              <p className="text-xs text-gray-500">{user?.email || 'user@email.com'}</p>
             </div>
           </div>
         </div>

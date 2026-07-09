@@ -15,7 +15,6 @@ export default function ClientLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
 
@@ -25,21 +24,10 @@ export default function ClientLayout({
     const checkAuth = async () => {
       try {
         const res = await fetch('/api/auth/me')
-        if (res.ok) {
-          setIsAuthenticated(true)
-          // If on a public page but authenticated, redirect to dashboard
-          if (isPublicPage) {
-            router.push('/dashboard')
-          }
-        } else {
-          setIsAuthenticated(false)
-          // If on a protected page and not authenticated, redirect to login
-          if (!isPublicPage) {
-            router.push('/login')
-          }
+        if (!res.ok && !isPublicPage) {
+          router.push('/login')
         }
       } catch (error) {
-        setIsAuthenticated(false)
         if (!isPublicPage) {
           router.push('/login')
         }

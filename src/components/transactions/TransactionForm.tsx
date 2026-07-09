@@ -1,4 +1,3 @@
-// src\components\transactions\TransactionForm.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -12,11 +11,34 @@ interface Category {
   isDefault: boolean
 }
 
+// Predefined color palette for categories
+const categoryColors = [
+  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+  '#DDA0DD', '#FF8A5C', '#A8E6CF', '#FFB7B2', '#B5B8C3',
+  '#F7DC6F', '#BB8FCE', '#85C1E9', '#F1948A', '#82E0AA',
+  '#F8C471', '#A3E4D7', '#D7BDE2', '#FADBD8', '#A9DFBF',
+  '#F5CBA7', '#AED6F1', '#D5F5E3', '#FAD7A0', '#D2B4DE'
+]
+
+function getRandomColor() {
+  return categoryColors[Math.floor(Math.random() * categoryColors.length)]
+}
+
+function getTextColorForBackground(hexColor: string) {
+  // Simple contrast checker - returns white for dark colors, black for light colors
+  const r = parseInt(hexColor.slice(1, 3), 16)
+  const g = parseInt(hexColor.slice(3, 5), 16)
+  const b = parseInt(hexColor.slice(5, 7), 16)
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000
+  return brightness > 128 ? '#333333' : '#FFFFFF'
+}
+
 export default function TransactionForm({ onSuccess }: { onSuccess: () => void }) {
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [categoryColorMap, setCategoryColorMap] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
     type: 'EXPENSE',
     category: '',
@@ -28,6 +50,15 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
   useEffect(() => {
     fetchCategories(formData.type as 'INCOME' | 'EXPENSE')
   }, [formData.type])
+
+  // Generate random colors for categories whenever they change
+  useEffect(() => {
+    const colorMap: Record<string, string> = {}
+    categories.forEach(cat => {
+      colorMap[cat.id] = getRandomColor()
+    })
+    setCategoryColorMap(colorMap)
+  }, [categories])
 
   const fetchCategories = async (type: string) => {
     try {
@@ -120,7 +151,7 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
           }}
           className={`py-3 rounded-xl font-medium transition-colors ${
             formData.type === 'INCOME'
-              ? 'bg-green-500 text-white shadow-md'
+              ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md'
               : 'bg-gray-100 text-gray-600'
           }`}
         >
@@ -135,7 +166,7 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
           }}
           className={`py-3 rounded-xl font-medium transition-colors ${
             formData.type === 'EXPENSE'
-              ? 'bg-red-500 text-white shadow-md'
+              ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md'
               : 'bg-gray-100 text-gray-600'
           }`}
         >
@@ -165,35 +196,44 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
         </div>
       </div>
 
-      {/* Category Grid with Add New */}
+      {/* Category Grid with Random Colors */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Category
         </label>
         <div className="grid grid-cols-3 gap-2">
-          {availableCategories.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => {
-                setFormData({ ...formData, category: cat.name })
-                setIsAddingCategory(false)
-                setNewCategoryName('')
-              }}
-              className={`py-2 px-3 rounded-xl text-sm font-medium transition-colors relative ${
-                formData.category === cat.name
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {cat.name}
-              {cat.isDefault && (
-                <span className="absolute -top-1 -right-1 text-[8px] bg-gray-400 text-white rounded-full px-1">
-                  D
-                </span>
-              )}
-            </button>
-          ))}
+          {availableCategories.map((cat) => {
+            const bgColor = categoryColorMap[cat.id] || '#6B7280'
+            const textColor = getTextColorForBackground(bgColor)
+            const isSelected = formData.category === cat.name
+            
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setFormData({ ...formData, category: cat.name })
+                  setIsAddingCategory(false)
+                  setNewCategoryName('')
+                }}
+                className="py-2 px-3 rounded-xl text-sm font-medium transition-all relative border-2"
+                style={{
+                  backgroundColor: isSelected ? bgColor : 'transparent',
+                  color: isSelected ? textColor : '#6B7280',
+                  borderColor: isSelected ? bgColor : '#E5E7EB',
+                }}
+              >
+                {cat.name}
+                {cat.isDefault && (
+                  <span className={`absolute -top-1 -right-1 text-[8px] bg-gray-400 text-white rounded-full px-1 ${
+                    isSelected ? 'opacity-80' : ''
+                  }`}>
+                    D
+                  </span>
+                )}
+              </button>
+            )
+          })}
           
           {/* Add New Category Button */}
           {!isAddingCategory ? (
@@ -283,7 +323,7 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
       <button
         type="submit"
         disabled={loading || !formData.category}
-        className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 text-lg"
+        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 text-lg"
       >
         {loading ? 'Adding...' : 'Save'}
       </button>

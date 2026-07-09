@@ -100,39 +100,39 @@ export default function Topbar({ onMenuClick, isMobileMenuOpen }: TopbarProps) {
   const unreadCount = notifications.filter(n => !n.read).length
 
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-3 sm:px-4 py-2 sm:py-3 sticky top-0 z-30">
+    <header className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white px-3 sm:px-4 py-2 sm:py-3 sticky top-0 z-30 shadow-lg">
       <div className="flex items-center justify-between">
         {/* Left section: Menu button + Greeting */}
         <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
           {/* Mobile Menu Button */}
           <button
             onClick={onMenuClick}
-            className="md:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+            className="md:hidden p-1.5 sm:p-2 rounded-lg hover:bg-white/20 transition-colors flex-shrink-0"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
-              <FiX className="w-5 h-5 text-gray-600" />
+              <FiX className="w-5 h-5 text-white" />
             ) : (
-              <FiMenu className="w-5 h-5 text-gray-600" />
+              <FiMenu className="w-5 h-5 text-white" />
             )}
           </button>
           
           {/* Greeting - Desktop */}
           <div className="hidden sm:block min-w-0">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
+            <h2 className="text-base sm:text-lg font-semibold text-white truncate">
               {getGreeting()}, {user?.name || 'User'} 👋
             </h2>
-            <p className="text-xs sm:text-sm text-gray-500 truncate">
+            <p className="text-xs sm:text-sm text-white/80 truncate">
               Welcome back to your dashboard
             </p>
           </div>
 
           {/* Greeting - Mobile */}
           <div className="sm:hidden min-w-0 flex-1">
-            <h2 className="text-sm font-semibold text-gray-800 truncate">
+            <h2 className="text-sm font-semibold text-white truncate">
               {getGreeting()}, {user?.name?.split(' ')[0] || 'User'}
             </h2>
-            <p className="text-[10px] text-gray-400 truncate">
+            <p className="text-[10px] text-white/70 truncate">
               {user?.email || 'user@email.com'}
             </p>
           </div>
@@ -144,10 +144,10 @@ export default function Topbar({ onMenuClick, isMobileMenuOpen }: TopbarProps) {
           <div ref={notificationRef} className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-white/20 transition-colors relative"
               aria-label="Notifications"
             >
-              <FiBell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+              <FiBell className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-red-500 text-white text-[8px] sm:text-[10px] font-bold rounded-full flex items-center justify-center">
                   {unreadCount}
@@ -204,15 +204,15 @@ export default function Topbar({ onMenuClick, isMobileMenuOpen }: TopbarProps) {
           <div ref={profileRef} className="relative">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center space-x-1 sm:space-x-2 p-0.5 sm:p-1 rounded-lg hover:bg-gray-100 transition-colors"
+              className="flex items-center space-x-1 sm:space-x-2 p-0.5 sm:p-1 rounded-lg hover:bg-white/20 transition-colors"
               aria-label="Profile menu"
             >
-              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/50">
                 <span className="text-white font-medium text-xs sm:text-sm">
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </span>
               </div>
-              <FiChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-500 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
+              <FiChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 text-white transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Profile Dropdown */}

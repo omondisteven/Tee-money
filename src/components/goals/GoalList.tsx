@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
+import { FiTrash2, FiEdit2, FiCheck, FiX } from 'react-icons/fi'
 
 interface Goal {
   id: string
@@ -16,6 +17,7 @@ export default function GoalList() {
   const [goals, setGoals] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [editingAmount, setEditingAmount] = useState<Record<string, string>>({})
 
   useEffect(() => {
     fetchGoals()
@@ -27,25 +29,40 @@ export default function GoalList() {
       if (res.ok) {
         const data = await res.json()
         setGoals(data)
+        // Initialize editing amounts
+        const amounts: Record<string, string> = {}
+        data.forEach((goal: Goal) => {
+          amounts[goal.id] = goal.currentAmount.toString()
+        })
+        setEditingAmount(amounts)
       }
     } catch (error) {
       console.error('Error fetching goals:', error)
+      toast.error('Failed to load goals')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleUpdateProgress = async (id: string, currentAmount: number) => {
+  const handleUpdateProgress = async (id: string) => {
+    const amount = parseFloat(editingAmount[id])
+    
+    if (isNaN(amount) || amount < 0) {
+      toast.error('Please enter a valid amount')
+      return
+    }
+
     setUpdating(id)
     try {
       const res = await fetch(`/api/goals/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentAmount }),
+        body: JSON.stringify({ currentAmount: amount }),
       })
 
       if (!res.ok) {
-        throw new Error('Failed to update goal')
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update goal')
       }
 
       toast.success('Goal progress updated!')
@@ -76,14 +93,26 @@ export default function GoalList() {
     }
   }
 
+  const handleAmountChange = (id: string, value: string) => {
+    setEditingAmount(prev => ({ ...prev, [id]: value }))
+  }
+
   if (loading) {
-    return <div className="text-center py-8">Loading goals...</div>
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    )
   }
 
   if (goals.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        No goals set. Create your first financial goal!
+      <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-4xl">🎯</span>
+        </div>
+        <p className="text-gray-500 font-medium">No goals set</p>
+        <p className="text-sm text-gray-400 mt-1">Create your first financial goal!</p>
       </div>
     )
   }
@@ -92,96 +121,121 @@ export default function GoalList() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {goals.map((goal) => {
         const percentage = Math.min(
-          (goal.currentAmount / goal.targetAmount) * 100,
+          (parseFloat(editingAmount[goal.id] || '0') / goal.targetAmount) * 100,
           100
         )
         const daysRemaining = Math.ceil(
           (new Date(goal.deadline).getTime() - Date.now()) /
             (1000 * 60 * 60 * 24)
         )
+        const isOverdue = daysRemaining < 0
+        const isComplete = percentage >= 100
 
         return (
-          <div key={goal.id} className="bg-white rounded-xl shadow-sm p-6">
+          <div key={goal.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <span className="text-3xl">{goal.icon}</span>
+                <span className="text-3xl">{goal.icon || '🎯'}</span>
                 <div>
-                  <h4 className="font-semibold">{goal.name}</h4>
+                  <h4 className="font-semibold text-gray-800">{goal.name}</h4>
                   <p className="text-sm text-gray-500">
-                    ${goal.currentAmount.toFixed(2)} / $
-                    {goal.targetAmount.toFixed(2)}
+                    Target: ${goal.targetAmount.toFixed(2)}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => handleDelete(goal.id)}
-                className="text-red-600 hover:text-red-800"
+                className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
+                aria-label="Delete goal"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
+                <FiTrash2 className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="mb-4">
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
+            {/* Progress Bar */}
+            <div className="mb-3">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-gray-600">Progress</span>
+                <span className="font-semibold text-gray-800">
+                  ${(parseFloat(editingAmount[goal.id] || '0')).toFixed(2)} / ${goal.targetAmount.toFixed(2)}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
                 <div
-                  className="h-2.5 rounded-full bg-blue-600 transition-all"
-                  style={{ width: `${percentage}%` }}
+                  className={`h-3 rounded-full transition-all duration-500 ${
+                    isComplete ? 'bg-green-500' : isOverdue ? 'bg-red-500' : 'bg-blue-600'
+                  }`}
+                  style={{ width: `${Math.min(percentage, 100)}%` }}
                 />
               </div>
-              <div className="flex justify-between text-sm mt-1">
+              <div className="flex justify-between text-xs mt-1">
                 <span className="text-gray-500">{percentage.toFixed(1)}%</span>
-                <span className="text-gray-500">
-                  {daysRemaining > 0
-                    ? `${daysRemaining} days remaining`
-                    : 'Deadline passed'}
+                <span className={`font-medium ${isOverdue ? 'text-red-500' : 'text-gray-500'}`}>
+                  {isOverdue 
+                    ? `${Math.abs(daysRemaining)} days overdue`
+                    : `${daysRemaining} days remaining`}
                 </span>
               </div>
             </div>
 
-            <div className="flex space-x-2">
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                max={goal.targetAmount}
-                className="flex-1 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Update progress"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const value = parseFloat((e.target as HTMLInputElement).value)
-                    if (!isNaN(value) && value >= 0) {
-                      handleUpdateProgress(goal.id, value)
-                    }
-                  }
-                }}
-              />
+            {/* Update Progress */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                  $
+                </span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={goal.targetAmount}
+                  className="w-full pl-7 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  placeholder="0.00"
+                  value={editingAmount[goal.id] || ''}
+                  onChange={(e) => handleAmountChange(goal.id, e.target.value)}
+                  disabled={updating === goal.id}
+                />
+              </div>
               <button
-                onClick={() => {
-                  const input = document.querySelector(
-                    `#goal-${goal.id}-input`
-                  ) as HTMLInputElement
-                  const value = parseFloat(input.value)
-                  if (!isNaN(value) && value >= 0) {
-                    handleUpdateProgress(goal.id, value)
-                  }
-                }}
-                disabled={updating === goal.id}
-                className="px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                onClick={() => handleUpdateProgress(goal.id)}
+                disabled={updating === goal.id || !editingAmount[goal.id]}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 text-sm font-medium whitespace-nowrap"
               >
-                {updating === goal.id ? '...' : 'Update'}
+                {updating === goal.id ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Updating</span>
+                  </>
+                ) : (
+                  <>
+                    <FiCheck className="w-4 h-4" />
+                    <span>Update</span>
+                  </>
+                )}
               </button>
+            </div>
+
+            {/* Status Badge */}
+            <div className="mt-3 flex items-center gap-2">
+              {isComplete ? (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                  <FiCheck className="w-3 h-3" />
+                  Completed!
+                </span>
+              ) : isOverdue ? (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                  <FiX className="w-3 h-3" />
+                  Overdue
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                  In Progress
+                </span>
+              )}
+              <span className="text-xs text-gray-400">
+                Goal ID: {goal.id.slice(0, 8)}
+              </span>
             </div>
           </div>
         )

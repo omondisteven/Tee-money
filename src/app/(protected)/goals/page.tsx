@@ -15,24 +15,30 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Goals</h2>
+    <div className="pb-20">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Financial Goals</h2>
+          <p className="text-xs sm:text-sm text-gray-500">Track your savings goals and progress</p>
+        </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm"
         >
-          <FiPlus className="w-5 h-5" />
+          <FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />
           <span>New Goal</span>
         </button>
       </div>
 
+      {/* Form */}
       {showForm && (
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
           <GoalForm onSuccess={handleGoalAdded} />
         </div>
       )}
 
+      {/* Goal List */}
       <GoalList key={refreshKey} />
     </div>
   )

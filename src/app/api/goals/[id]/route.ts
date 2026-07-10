@@ -18,6 +18,13 @@ export async function PUT(
 
     const { currentAmount } = await request.json()
 
+    if (currentAmount === undefined || currentAmount === null) {
+      return NextResponse.json(
+        { error: 'Current amount is required' },
+        { status: 400 }
+      )
+    }
+
     const goal = await prisma.goal.findUnique({
       where: { id: params.id },
     })
@@ -36,15 +43,25 @@ export async function PUT(
       )
     }
 
+    // Validate amount doesn't exceed target
+    const newAmount = parseFloat(currentAmount)
+    if (newAmount > goal.targetAmount) {
+      return NextResponse.json(
+        { error: 'Amount cannot exceed target amount' },
+        { status: 400 }
+      )
+    }
+
     const updatedGoal = await prisma.goal.update({
       where: { id: params.id },
       data: {
-        currentAmount: parseFloat(currentAmount),
+        currentAmount: newAmount,
       },
     })
 
     return NextResponse.json(updatedGoal)
   } catch (error) {
+    console.error('Error updating goal:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -90,6 +107,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Goal deleted successfully' })
   } catch (error) {
+    console.error('Error deleting goal:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

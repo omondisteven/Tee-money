@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FiTrash2, FiEdit2, FiCheck, FiX } from 'react-icons/fi'
+import { FiTrash2, FiEdit2, FiCheck, FiX, FiPieChart } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 
 interface Budget {
@@ -221,6 +221,3 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
     </div>
   )
 }
-
-// Import missing icon
-import { FiPieChart } from 'react-icons/fi'

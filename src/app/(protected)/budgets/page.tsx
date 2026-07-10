@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import BudgetForm from '@/components/budgets/BudgetForm'
 import BudgetList from '@/components/budgets/BudgetList'
-import { FiPlus, FiPieChart, FiTrendingUp, FiTrendingDown, FiDollarSign } from 'react-icons/fi'
+import { FiPlus, FiDollarSign, FiTrendingUp, FiTrendingDown } from 'react-icons/fi'
 
 interface BudgetSummary {
   totalBudget: number
@@ -49,20 +49,11 @@ export default function BudgetsPage() {
   }
 
   return (
-    <div className="pb-20">
+    <div className="pb-24">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Budgets</h2>
-          <p className="text-xs sm:text-sm text-gray-500">Track your spending limits</p>
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-xl hover:shadow-lg transition-all text-sm"
-        >
-          <FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />
-          <span>Set Budget</span>
-        </button>
+      <div className="flex flex-col mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Budgets</h2>
+        <p className="text-xs sm:text-sm text-gray-500">Track your spending limits</p>
       </div>
 
       {/* Total Budget Summary Card */}
@@ -150,15 +141,53 @@ export default function BudgetsPage() {
         </div>
       </div>
 
-      {/* Form */}
-      {showForm && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-          <BudgetForm onSuccess={handleBudgetAdded} />
-        </div>
-      )}
-
       {/* Budget List */}
       <BudgetList key={refreshKey} onUpdate={fetchBudgetSummary} />
+
+      {/* Floating Action Button - Mobile Only */}
+      <div className="md:hidden fixed bottom-20 left-1/2 transform -translate-x-1/2 z-30">
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center justify-center w-14 h-14 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95"
+          aria-label="Set budget"
+        >
+          <FiPlus className="w-7 h-7" />
+        </button>
+      </div>
+
+      {/* Desktop Add Button (hidden on mobile) */}
+      <div className="hidden md:flex justify-end mb-4">
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-xl hover:shadow-lg transition-all"
+        >
+          <FiPlus className="w-5 h-5" />
+          <span>Set Budget</span>
+        </button>
+      </div>
+
+      {/* Form Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center">
+          <div className="bg-white w-full max-w-md rounded-t-2xl md:rounded-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex justify-between items-center">
+              <h3 className="font-semibold text-gray-800">Set Budget</h3>
+              <button
+                onClick={() => setShowForm(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              <BudgetForm onSuccess={handleBudgetAdded} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
+// Import missing icon
+import { FiX } from 'react-icons/fi'

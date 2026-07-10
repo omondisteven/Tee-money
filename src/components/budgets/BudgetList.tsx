@@ -15,7 +15,7 @@ interface BudgetListProps {
   onUpdate?: () => void
 }
 
-// Same color palette as BudgetForm
+// Color palette for categories
 const categoryColors = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
   '#DDA0DD', '#FF8A5C', '#A8E6CF', '#FFB7B2', '#B5B8C3',
@@ -25,7 +25,6 @@ const categoryColors = [
 ]
 
 function getColorForCategory(categoryName: string): string {
-  // Deterministic color based on category name
   let hash = 0
   for (let i = 0; i < categoryName.length; i++) {
     hash = categoryName.charCodeAt(i) + ((hash << 5) - hash)
@@ -76,7 +75,8 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
       })
 
       if (!res.ok) {
-        throw new Error('Failed to delete budget')
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to delete budget')
       }
 
       toast.success(`Budget for "${category}" deleted`)
@@ -99,20 +99,33 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
 
   const handleEditSave = async (id: string) => {
     const newAmount = parseFloat(editAmount)
+    
+    // Validate amount
     if (isNaN(newAmount) || newAmount <= 0) {
-      toast.error('Please enter a valid amount')
+      toast.error('Please enter a valid amount greater than 0')
+      return
+    }
+
+    // Find the budget to check current spent amount
+    const budget = budgets.find(b => b.id === id)
+    if (budget && newAmount < budget.spent) {
+      toast.error(`Amount cannot be less than already spent ($${budget.spent.toFixed(2)})`)
       return
     }
 
     try {
-      const res = await fetch(`/api/budgets/${id}`, {
+      const response = await fetch(`/api/budgets/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ amount: newAmount }),
       })
 
-      if (!res.ok) {
-        throw new Error('Failed to update budget')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Failed to update budget')
       }
 
       toast.success('Budget updated successfully')
@@ -121,7 +134,8 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
       await fetchBudgets()
       if (onUpdate) onUpdate()
     } catch (error: any) {
-      toast.error(error.message)
+      console.error('Update error:', error)
+      toast.error(error.message || 'Failed to update budget')
     }
   }
 
@@ -187,12 +201,14 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
                     <button
                       onClick={() => handleEditSave(budget.id)}
                       className="p-1.5 text-green-600 hover:text-green-700 transition-colors rounded-lg hover:bg-green-50"
+                      aria-label="Save changes"
                     >
                       <FiCheck className="w-4 h-4" />
                     </button>
                     <button
                       onClick={handleEditCancel}
                       className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-50"
+                      aria-label="Cancel edit"
                     >
                       <FiX className="w-4 h-4" />
                     </button>

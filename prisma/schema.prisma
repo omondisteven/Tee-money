@@ -56,16 +56,16 @@ model Transaction {
 }
 
 model Budget {
-  id          String         @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   category    String
   amount      Float
-  spent       Float          @default(0)
-  month       Int            @default(0)
+  spent       Float    @default(0)
+  month       Int      @default(0)
   year        Int
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([userId, category, month, year])
 }

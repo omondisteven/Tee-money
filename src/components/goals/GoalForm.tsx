@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { toast } from 'react-toastify'
 
-const icons = ['🎯', '💰', '🏠', '🚗', '✈️', '🎓', '💼', '🏥', '🎮', '📚', '🏦', '💎']
+const icons = ['🎯', '💰', '🏠', '🚗', '✈️', '🎓', '💼', '🏥', '🎮', '📚', '🏦', '💎', '🌟', '🎪', '🏝️']
 
 export default function GoalForm({ onSuccess }: { onSuccess: () => void }) {
   const [loading, setLoading] = useState(false)

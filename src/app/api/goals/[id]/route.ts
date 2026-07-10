@@ -2,17 +2,56 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUserIdFromRequest } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const userId = await getUserIdFromRequest(request)
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const goal = await prisma.goal.findUnique({
+      where: { id: params.id },
+    })
+
+    if (!goal) {
+      return NextResponse.json(
+        { error: 'Goal not found' },
+        { status: 404 }
+      )
+    }
+
+    if (goal.userId !== userId) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    return NextResponse.json(goal)
+  } catch (error) {
+    console.error('Error fetching goal:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    console.log('PUT request received for goal ID:', params.id)
-    
     const userId = await getUserIdFromRequest(request)
 
     if (!userId) {
-      console.log('Unauthorized: No userId found')
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -20,43 +59,33 @@ export async function PUT(
     }
 
     const body = await request.json()
-    console.log('Request body:', body)
-
     const { currentAmount } = body
 
     if (currentAmount === undefined || currentAmount === null) {
-      console.log('Missing currentAmount in request')
       return NextResponse.json(
         { error: 'Current amount is required' },
         { status: 400 }
       )
     }
 
-    // Find the goal
     const goal = await prisma.goal.findUnique({
       where: { id: params.id },
     })
 
     if (!goal) {
-      console.log('Goal not found:', params.id)
       return NextResponse.json(
         { error: 'Goal not found' },
         { status: 404 }
       )
     }
 
-    console.log('Found goal:', goal)
-
-    // Check if goal belongs to user
     if (goal.userId !== userId) {
-      console.log('Goal belongs to different user:', goal.userId, userId)
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
       )
     }
 
-    // Validate amount
     const newAmount = parseFloat(currentAmount)
     if (isNaN(newAmount) || newAmount < 0) {
       return NextResponse.json(
@@ -72,7 +101,6 @@ export async function PUT(
       )
     }
 
-    // Update the goal
     const updatedGoal = await prisma.goal.update({
       where: { id: params.id },
       data: {
@@ -80,18 +108,100 @@ export async function PUT(
       },
     })
 
-    console.log('Goal updated successfully:', updatedGoal)
+    return NextResponse.json(updatedGoal)
+  } catch (error) {
+    console.error('Error updating goal:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const userId = await getUserIdFromRequest(request)
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { name, targetAmount } = body
+
+    // Validate at least one field is provided
+    if (!name && targetAmount === undefined) {
+      return NextResponse.json(
+        { error: 'At least one field (name or targetAmount) is required' },
+        { status: 400 }
+      )
+    }
+
+    const goal = await prisma.goal.findUnique({
+      where: { id: params.id },
+    })
+
+    if (!goal) {
+      return NextResponse.json(
+        { error: 'Goal not found' },
+        { status: 404 }
+      )
+    }
+
+    if (goal.userId !== userId) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    // Prepare update data
+    const updateData: any = {}
+
+    if (name) {
+      if (!name.trim()) {
+        return NextResponse.json(
+          { error: 'Goal name is required' },
+          { status: 400 }
+        )
+      }
+      updateData.name = name.trim()
+    }
+
+    if (targetAmount !== undefined) {
+      const newTarget = parseFloat(targetAmount)
+      if (isNaN(newTarget) || newTarget <= 0) {
+        return NextResponse.json(
+          { error: 'Invalid target amount' },
+          { status: 400 }
+        )
+      }
+      // Check if new target is less than current progress
+      if (newTarget < goal.currentAmount) {
+        return NextResponse.json(
+          { error: `Target amount cannot be less than current progress ($${goal.currentAmount.toFixed(2)})` },
+          { status: 400 }
+        )
+      }
+      updateData.targetAmount = newTarget
+    }
+
+    const updatedGoal = await prisma.goal.update({
+      where: { id: params.id },
+      data: updateData,
+    })
 
     return NextResponse.json(updatedGoal)
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error updating goal:', error)
-    console.error('Error stack:', error.stack)
-    
     return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -126,6 +236,14 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
+      )
+    }
+
+    // Check if goal has progress
+    if (goal.currentAmount > 0) {
+      return NextResponse.json(
+        { error: 'Cannot delete goal with progress' },
+        { status: 400 }
       )
     }
 

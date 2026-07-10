@@ -15,6 +15,33 @@ interface BudgetListProps {
   onUpdate?: () => void
 }
 
+// Same color palette as BudgetForm
+const categoryColors = [
+  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+  '#DDA0DD', '#FF8A5C', '#A8E6CF', '#FFB7B2', '#B5B8C3',
+  '#F7DC6F', '#BB8FCE', '#85C1E9', '#F1948A', '#82E0AA',
+  '#F8C471', '#A3E4D7', '#D7BDE2', '#FADBD8', '#A9DFBF',
+  '#F5CBA7', '#AED6F1', '#D5F5E3', '#FAD7A0', '#D2B4DE'
+]
+
+function getColorForCategory(categoryName: string): string {
+  // Deterministic color based on category name
+  let hash = 0
+  for (let i = 0; i < categoryName.length; i++) {
+    hash = categoryName.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const index = Math.abs(hash) % categoryColors.length
+  return categoryColors[index]
+}
+
+function getTextColorForBackground(hexColor: string) {
+  const r = parseInt(hexColor.slice(1, 3), 16)
+  const g = parseInt(hexColor.slice(3, 5), 16)
+  const b = parseInt(hexColor.slice(5, 7), 16)
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000
+  return brightness > 128 ? '#333333' : '#FFFFFF'
+}
+
 export default function BudgetList({ onUpdate }: BudgetListProps) {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [loading, setLoading] = useState(true)
@@ -123,12 +150,18 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
       {budgets.map((budget) => {
         const percentage = Math.min((budget.spent / budget.amount) * 100, 100)
         const isOverBudget = budget.spent > budget.amount
+        const bgColor = getColorForCategory(budget.category)
+        const textColor = getTextColorForBackground(bgColor)
 
         return (
           <div key={budget.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: bgColor }}
+                  />
                   <h4 className="font-semibold text-gray-800">{budget.category}</h4>
                   {isOverBudget && (
                     <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
@@ -192,12 +225,11 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
             <div className="relative mt-2">
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div
-                  className={`h-2.5 rounded-full transition-all ${
-                    isOverBudget ? 'bg-red-600' :
-                    percentage > 70 ? 'bg-yellow-500' :
-                    'bg-blue-600'
-                  }`}
-                  style={{ width: `${Math.min(percentage, 100)}%` }}
+                  className="h-2.5 rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(percentage, 100)}%`,
+                    backgroundColor: isOverBudget ? '#EF4444' : bgColor,
+                  }}
                 />
               </div>
               <div className="flex justify-between text-xs mt-1">

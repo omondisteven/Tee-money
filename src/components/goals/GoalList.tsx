@@ -35,6 +35,10 @@ export default function GoalList() {
           amounts[goal.id] = goal.currentAmount.toString()
         })
         setEditingAmount(amounts)
+      } else {
+        const errorData = await res.json()
+        console.error('Failed to fetch goals:', errorData)
+        toast.error('Failed to load goals')
       }
     } catch (error) {
       console.error('Error fetching goals:', error)
@@ -52,23 +56,34 @@ export default function GoalList() {
       return
     }
 
+    // Find the goal to check target amount
+    const goal = goals.find(g => g.id === id)
+    if (goal && amount > goal.targetAmount) {
+      toast.error(`Amount cannot exceed target of $${goal.targetAmount.toFixed(2)}`)
+      return
+    }
+
     setUpdating(id)
     try {
-      const res = await fetch(`/api/goals/${id}`, {
+      const response = await fetch(`/api/goals/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ currentAmount: amount }),
       })
 
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to update goal')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Failed to update goal')
       }
 
-      toast.success('Goal progress updated!')
-      fetchGoals()
+      toast.success('Goal progress updated! 🎯')
+      await fetchGoals() // Refresh the list
     } catch (error: any) {
-      toast.error(error.message)
+      console.error('Update error:', error)
+      toast.error(error.message || 'Failed to update goal progress')
     } finally {
       setUpdating(null)
     }
@@ -83,11 +98,12 @@ export default function GoalList() {
       })
 
       if (!res.ok) {
-        throw new Error('Failed to delete goal')
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to delete goal')
       }
 
       toast.success('Goal deleted successfully')
-      fetchGoals()
+      await fetchGoals()
     } catch (error: any) {
       toast.error(error.message)
     }
@@ -120,10 +136,8 @@ export default function GoalList() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {goals.map((goal) => {
-        const percentage = Math.min(
-          (parseFloat(editingAmount[goal.id] || '0') / goal.targetAmount) * 100,
-          100
-        )
+        const currentAmount = parseFloat(editingAmount[goal.id] || '0')
+        const percentage = Math.min((currentAmount / goal.targetAmount) * 100, 100)
         const daysRemaining = Math.ceil(
           (new Date(goal.deadline).getTime() - Date.now()) /
             (1000 * 60 * 60 * 24)
@@ -158,7 +172,7 @@ export default function GoalList() {
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-600">Progress</span>
                 <span className="font-semibold text-gray-800">
-                  ${(parseFloat(editingAmount[goal.id] || '0')).toFixed(2)} / ${goal.targetAmount.toFixed(2)}
+                  ${currentAmount.toFixed(2)} / ${goal.targetAmount.toFixed(2)}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
@@ -233,9 +247,6 @@ export default function GoalList() {
                   In Progress
                 </span>
               )}
-              <span className="text-xs text-gray-400">
-                Goal ID: {goal.id.slice(0, 8)}
-              </span>
             </div>
           </div>
         )

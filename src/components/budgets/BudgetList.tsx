@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FiTrash2, FiEdit2, FiCheck, FiX, FiPieChart } from 'react-icons/fi'
+import { FiTrash2, FiEdit2, FiCheck, FiX, FiPieChart, FiAlertCircle } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 
 interface Budget {
@@ -33,14 +33,6 @@ function getColorForCategory(categoryName: string): string {
   return categoryColors[index]
 }
 
-function getTextColorForBackground(hexColor: string) {
-  const r = parseInt(hexColor.slice(1, 3), 16)
-  const g = parseInt(hexColor.slice(3, 5), 16)
-  const b = parseInt(hexColor.slice(5, 7), 16)
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000
-  return brightness > 128 ? '#333333' : '#FFFFFF'
-}
-
 export default function BudgetList({ onUpdate }: BudgetListProps) {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [loading, setLoading] = useState(true)
@@ -66,7 +58,16 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
     }
   }
 
-  const handleDelete = async (id: string, category: string) => {
+  const handleDelete = async (id: string, category: string, spent: number) => {
+    // Check if budget has been spent on
+    if (spent > 0) {
+      toast.error(
+        `Cannot delete "${category}" - it has spent $${spent.toFixed(2)}. ` +
+        `Only budgets with no spending can be deleted.`
+      )
+      return
+    }
+
     if (!confirm(`Delete budget for "${category}"?`)) return
 
     try {
@@ -97,7 +98,6 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
     setEditAmount('')
   }
 
-  // This is the key fix - using the same logic as BudgetForm
   const handleEditSave = async (id: string) => {
     const newAmount = parseFloat(editAmount)
     
@@ -115,7 +115,6 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
     }
 
     try {
-      // Use the same API call pattern that works in BudgetForm
       const response = await fetch('/api/budgets', {
         method: 'POST',
         headers: { 
@@ -169,8 +168,8 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
       {budgets.map((budget) => {
         const percentage = Math.min((budget.spent / budget.amount) * 100, 100)
         const isOverBudget = budget.spent > budget.amount
+        const hasSpending = budget.spent > 0
         const bgColor = getColorForCategory(budget.category)
-        const textColor = getTextColorForBackground(bgColor)
 
         return (
           <div key={budget.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
@@ -185,6 +184,11 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
                   {isOverBudget && (
                     <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
                       Over Budget
+                    </span>
+                  )}
+                  {hasSpending && (
+                    <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                      ${budget.spent.toFixed(2)} spent
                     </span>
                   )}
                 </div>
@@ -233,9 +237,15 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
                   <FiEdit2 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(budget.id, budget.category)}
-                  className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
+                  onClick={() => handleDelete(budget.id, budget.category, budget.spent)}
+                  className={`p-2 transition-colors rounded-lg ${
+                    hasSpending
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                  }`}
                   aria-label="Delete budget"
+                  disabled={hasSpending}
+                  title={hasSpending ? 'Cannot delete budget with spending' : 'Delete budget'}
                 >
                   <FiTrash2 className="w-4 h-4" />
                 </button>
@@ -268,6 +278,18 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
                 </span>
               </div>
             </div>
+
+            {/* Delete Protection Notice */}
+            {hasSpending && (
+              <div className="mt-3 flex items-center gap-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                <FiAlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span className="text-xs text-amber-700">
+                  🔒 This budget has spending and cannot be deleted.
+                  {budget.spent < budget.amount && 
+                    ` Reduce spending to $0 before deleting.`}
+                </span>
+              </div>
+            )}
           </div>
         )
       })}

@@ -2,13 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
-import { FiPlus, FiCheck, FiX } from 'react-icons/fi'
+import { FiPlus, FiCheck, FiX, FiAlertCircle } from 'react-icons/fi'
 
 interface Category {
   id: string
   name: string
   type: 'INCOME' | 'EXPENSE'
   isDefault: boolean
+}
+
+interface ExistingBudget {
+  category: string
+  amount: number
+  spent: number
 }
 
 // Predefined color palette for categories
@@ -39,9 +45,12 @@ interface BudgetFormProps {
 export default function BudgetForm({ onSuccess }: BudgetFormProps) {
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
+  const [existingBudgets, setExistingBudgets] = useState<ExistingBudget[]>([])
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [categoryColorMap, setCategoryColorMap] = useState<Record<string, string>>({})
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false)
+  const [duplicateCategory, setDuplicateCategory] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     category: '',
     amount: '',
@@ -49,6 +58,7 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
 
   useEffect(() => {
     fetchCategories()
+    fetchExistingBudgets()
   }, [])
 
   // Generate random colors for categories
@@ -62,12 +72,10 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
 
   const fetchCategories = async () => {
     try {
-      // Fetch only EXPENSE categories
       const res = await fetch('/api/categories?type=EXPENSE')
       if (res.ok) {
         const data = await res.json()
         setCategories(data)
-        // Auto-select first category if none selected
         if (data.length > 0 && !formData.category) {
           setFormData(prev => ({ ...prev, category: data[0].name }))
         }
@@ -78,9 +86,46 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
     }
   }
 
+  const fetchExistingBudgets = async () => {
+    try {
+      const res = await fetch('/api/budgets')
+      if (res.ok) {
+        const data = await res.json()
+        setExistingBudgets(data)
+      }
+    } catch (error) {
+      console.error('Error fetching budgets:', error)
+    }
+  }
+
+  const handleCategorySelect = (categoryName: string) => {
+    // Check if this category already has a budget
+    const existing = existingBudgets.find(b => b.category === categoryName)
+    
+    if (existing) {
+      setDuplicateCategory(categoryName)
+      setShowDuplicateWarning(true)
+      // Still select the category but show warning
+      setFormData(prev => ({ ...prev, category: categoryName }))
+    } else {
+      setDuplicateCategory(null)
+      setShowDuplicateWarning(false)
+      setFormData(prev => ({ ...prev, category: categoryName }))
+      setIsAddingCategory(false)
+      setNewCategoryName('')
+    }
+  }
+
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) {
       toast.error('Please enter a category name')
+      return
+    }
+
+    // Check if category already exists in budgets
+    const existing = existingBudgets.find(b => b.category === newCategoryName.trim())
+    if (existing) {
+      toast.error(`"${newCategoryName.trim()}" already has a budget set. Please edit the existing budget.`)
       return
     }
 
@@ -90,7 +135,7 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newCategoryName.trim(),
-          type: 'EXPENSE', // Always create as EXPENSE for budgets
+          type: 'EXPENSE',
         }),
       })
 
@@ -105,9 +150,24 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
       setNewCategoryName('')
       setIsAddingCategory(false)
       toast.success('Category added successfully!')
+      // Refresh existing budgets
+      await fetchExistingBudgets()
     } catch (error: any) {
       toast.error(error.message)
     }
+  }
+
+  const handleEditExisting = () => {
+    if (duplicateCategory) {
+      setShowDuplicateWarning(false)
+      // The user can now edit the amount for the existing category
+      toast.info(`Edit the budget for "${duplicateCategory}" by changing the amount below.`)
+    }
+  }
+
+  const handleProceedAnyway = () => {
+    setShowDuplicateWarning(false)
+    toast.warning(`You're setting a new budget for "${duplicateCategory}". The existing budget will be updated.`)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,6 +176,19 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
     if (!formData.category) {
       toast.error('Please select a category')
       return
+    }
+
+    const existing = existingBudgets.find(b => b.category === formData.category)
+    if (existing && !showDuplicateWarning) {
+      // If the user selected a category with existing budget and dismissed warning,
+      // they might want to update it
+      const confirmUpdate = confirm(
+        `"${formData.category}" already has a budget of $${existing.amount.toFixed(2)}.\n\n` +
+        `Do you want to update it to $${parseFloat(formData.amount).toFixed(2)}?`
+      )
+      if (!confirmUpdate) {
+        return
+      }
     }
 
     setLoading(true)
@@ -135,7 +208,10 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
         throw new Error(data.error || 'Failed to set budget')
       }
 
-      toast.success('Budget set successfully!')
+      toast.success(`Budget set successfully for "${formData.category}"!`)
+      setShowDuplicateWarning(false)
+      setDuplicateCategory(null)
+      await fetchExistingBudgets()
       onSuccess()
     } catch (error: any) {
       toast.error(error.message)
@@ -144,8 +220,48 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
     }
   }
 
+  // Get existing budget info for the selected category
+  const getExistingBudgetInfo = () => {
+    if (!formData.category) return null
+    return existingBudgets.find(b => b.category === formData.category)
+  }
+
+  const existingInfo = getExistingBudgetInfo()
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Duplicate Warning Banner */}
+      {showDuplicateWarning && duplicateCategory && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg">
+          <div className="flex items-start gap-3">
+            <FiAlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-amber-800">Budget Already Exists</h4>
+              <p className="text-sm text-amber-700 mt-1">
+                "{duplicateCategory}" already has a budget of 
+                ${existingBudgets.find(b => b.category === duplicateCategory)?.amount.toFixed(2)}.
+              </p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={handleEditExisting}
+                  className="px-3 py-1 text-sm bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors"
+                >
+                  Edit Existing
+                </button>
+                <button
+                  type="button"
+                  onClick={handleProceedAnyway}
+                  className="px-3 py-1 text-sm bg-amber-200 text-amber-900 rounded-lg hover:bg-amber-300 transition-colors"
+                >
+                  Proceed Anyway
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Category Grid */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -156,17 +272,16 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
             const bgColor = categoryColorMap[cat.id] || '#6B7280'
             const textColor = getTextColorForBackground(bgColor)
             const isSelected = formData.category === cat.name
+            const hasBudget = existingBudgets.some(b => b.category === cat.name)
             
             return (
               <button
                 key={cat.id}
                 type="button"
-                onClick={() => {
-                  setFormData({ ...formData, category: cat.name })
-                  setIsAddingCategory(false)
-                  setNewCategoryName('')
-                }}
-                className="py-2 px-3 rounded-xl text-sm font-medium transition-all border-2 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 relative"
+                onClick={() => handleCategorySelect(cat.name)}
+                className={`py-2 px-3 rounded-xl text-sm font-medium transition-all border-2 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 relative ${
+                  hasBudget ? 'ring-2 ring-amber-400 ring-offset-1' : ''
+                }`}
                 style={{
                   backgroundColor: bgColor,
                   color: textColor,
@@ -179,7 +294,12 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
                   {cat.name}
                   {isSelected && <span className="text-[10px]">✓</span>}
                 </span>
-                {cat.isDefault && (
+                {hasBudget && (
+                  <span className="absolute -top-1 -right-1 text-[8px] bg-amber-500 text-white rounded-full px-1">
+                    $
+                  </span>
+                )}
+                {cat.isDefault && !hasBudget && (
                   <span className="absolute -top-1 -right-1 text-[8px] bg-white/80 text-gray-700 rounded-full px-1">
                     D
                   </span>
@@ -243,8 +363,22 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
             </div>
           )}
         </div>
+
+        {/* Existing Budget Info */}
+        {existingInfo && !showDuplicateWarning && (
+          <div className="mt-2 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg flex items-center gap-2">
+            <FiAlertCircle className="w-3 h-3" />
+            <span>
+              Existing: ${existingInfo.amount.toFixed(2)} · 
+              Spent: ${existingInfo.spent.toFixed(2)} 
+              {existingInfo.spent > 0 && ` · ${((existingInfo.spent / existingInfo.amount) * 100).toFixed(0)}% used`}
+            </span>
+          </div>
+        )}
+
         <p className="text-xs text-gray-400 mt-2">
           💡 Only expense categories can be used for budgets
+          {existingInfo && ` · 🔄 This category already has a budget`}
         </p>
       </div>
 
@@ -268,6 +402,11 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
           />
         </div>
+        {existingInfo && !showDuplicateWarning && (
+          <p className="text-xs text-gray-400 mt-1">
+            Current budget: ${existingInfo.amount.toFixed(2)}
+          </p>
+        )}
       </div>
 
       <button
@@ -275,7 +414,7 @@ export default function BudgetForm({ onSuccess }: BudgetFormProps) {
         disabled={loading || !formData.category}
         className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 text-lg"
       >
-        {loading ? 'Setting Budget...' : 'Set Budget'}
+        {loading ? 'Setting Budget...' : existingInfo ? 'Update Budget' : 'Set Budget'}
       </button>
     </form>
   )

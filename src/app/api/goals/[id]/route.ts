@@ -58,12 +58,12 @@ export async function PUT(
       )
     }
 
-    const body = await request.json()
-    const { currentAmount } = body
+    const { name, targetAmount } = await request.json()
 
-    if (currentAmount === undefined || currentAmount === null) {
+    // Validate at least one field is provided
+    if (!name && targetAmount === undefined) {
       return NextResponse.json(
-        { error: 'Current amount is required' },
+        { error: 'At least one field (name or targetAmount) is required' },
         { status: 400 }
       )
     }
@@ -86,26 +86,39 @@ export async function PUT(
       )
     }
 
-    const newAmount = parseFloat(currentAmount)
-    if (isNaN(newAmount) || newAmount < 0) {
-      return NextResponse.json(
-        { error: 'Invalid amount' },
-        { status: 400 }
-      )
+    // Prepare update data
+    const updateData: any = {}
+
+    if (name) {
+      if (!name.trim()) {
+        return NextResponse.json(
+          { error: 'Goal name is required' },
+          { status: 400 }
+        )
+      }
+      updateData.name = name.trim()
     }
 
-    if (newAmount > goal.targetAmount) {
-      return NextResponse.json(
-        { error: `Amount cannot exceed target amount of $${goal.targetAmount.toFixed(2)}` },
-        { status: 400 }
-      )
+    if (targetAmount !== undefined) {
+      const newTarget = parseFloat(targetAmount)
+      if (isNaN(newTarget) || newTarget <= 0) {
+        return NextResponse.json(
+          { error: 'Invalid target amount' },
+          { status: 400 }
+        )
+      }
+      if (newTarget < goal.currentAmount) {
+        return NextResponse.json(
+          { error: `Target amount cannot be less than current progress ($${goal.currentAmount.toFixed(2)})` },
+          { status: 400 }
+        )
+      }
+      updateData.targetAmount = newTarget
     }
 
     const updatedGoal = await prisma.goal.update({
       where: { id: params.id },
-      data: {
-        currentAmount: newAmount,
-      },
+      data: updateData,
     })
 
     return NextResponse.json(updatedGoal)

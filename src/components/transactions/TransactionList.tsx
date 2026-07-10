@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { FiTrash2, FiTrendingUp, FiTrendingDown } from 'react-icons/fi'
+import { FiTrash2, FiEdit2, FiCheck, FiX, FiTrendingUp, FiTrendingDown } from 'react-icons/fi'
 
 interface Transaction {
   id: string
@@ -20,7 +20,14 @@ interface TransactionListProps {
 export default function TransactionList({ filter = 'all' }: TransactionListProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
-  const [totalCount, setTotalCount] = useState(0)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editFormData, setEditFormData] = useState<{
+    amount: string
+    description: string
+  }>({
+    amount: '',
+    description: '',
+  })
 
   useEffect(() => {
     fetchTransactions()
@@ -29,7 +36,6 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
   const fetchTransactions = async () => {
     setLoading(true)
     try {
-      // Build URL with filter
       let url = '/api/transactions?limit=100'
       if (filter === 'income') {
         url += '&type=INCOME'
@@ -41,7 +47,6 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
       if (res.ok) {
         const data = await res.json()
         setTransactions(data.transactions)
-        setTotalCount(data.total)
       }
     } catch (error) {
       console.error('Error fetching transactions:', error)
@@ -51,8 +56,8 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this transaction?')) return
+  const handleDelete = async (id: string, category: string) => {
+    if (!confirm(`Delete transaction for "${category}"?`)) return
 
     try {
       const res = await fetch(`/api/transactions/${id}`, {
@@ -60,22 +65,58 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
       })
 
       if (!res.ok) {
-        throw new Error('Failed to delete transaction')
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to delete transaction')
       }
 
-      toast.success('Transaction deleted successfully')
-      fetchTransactions()
+      toast.success(`Transaction for "${category}" deleted`)
+      await fetchTransactions()
     } catch (error: any) {
       toast.error(error.message)
     }
   }
 
-  // Get filter label for empty state
-  const getFilterLabel = () => {
-    switch (filter) {
-      case 'income': return 'income'
-      case 'expense': return 'expense'
-      default: return ''
+  const handleEditStart = (transaction: Transaction) => {
+    setEditingId(transaction.id)
+    setEditFormData({
+      amount: transaction.amount.toString(),
+      description: transaction.description || '',
+    })
+  }
+
+  const handleEditCancel = () => {
+    setEditingId(null)
+    setEditFormData({ amount: '', description: '' })
+  }
+
+  const handleEditSave = async (id: string) => {
+    const newAmount = parseFloat(editFormData.amount)
+    
+    if (isNaN(newAmount) || newAmount <= 0) {
+      toast.error('Please enter a valid amount')
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/transactions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: newAmount,
+          description: editFormData.description,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update transaction')
+      }
+
+      toast.success('Transaction updated successfully')
+      setEditingId(null)
+      await fetchTransactions()
+    } catch (error: any) {
+      toast.error(error.message)
     }
   }
 
@@ -89,7 +130,7 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
 
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
           {filter === 'income' ? (
             <FiTrendingUp className="w-10 h-10 text-gray-400" />
@@ -99,65 +140,114 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
             <FiTrendingUp className="w-10 h-10 text-gray-400" />
           )}
         </div>
-        <p className="text-gray-500 font-medium">
-          No {getFilterLabel()} transactions yet
-        </p>
-        <p className="text-sm text-gray-400 mt-1">
-          {filter === 'all' 
-            ? 'Start tracking your finances' 
-            : `Add your first ${getFilterLabel()} transaction`}
-        </p>
+        <p className="text-gray-500 font-medium">No transactions found</p>
+        <p className="text-sm text-gray-400 mt-1">Add your first transaction</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-3">
-      {/* Total count */}
-      <p className="text-xs text-gray-400 px-1">
-        Showing {transactions.length} {getFilterLabel()} transactions
-        {totalCount > transactions.length && ` (${totalCount} total)`}
-      </p>
-
       {transactions.map((transaction) => (
         <div
           key={transaction.id}
-          className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between"
+          className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow"
         >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-              transaction.type === 'INCOME' ? 'bg-green-100' : 'bg-red-100'
-            }`}>
-              {transaction.type === 'INCOME' ? (
-                <FiTrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                transaction.type === 'INCOME' ? 'bg-green-100' : 'bg-red-100'
+              }`}>
+                {transaction.type === 'INCOME' ? (
+                  <FiTrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                ) : (
+                  <FiTrendingDown className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-gray-800 text-sm sm:text-base">
+                  {transaction.category}
+                </p>
+                {editingId === transaction.id ? (
+                  <div className="flex flex-col gap-2 mt-1">
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={editFormData.amount}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, amount: e.target.value }))}
+                        className="w-32 pl-7 pr-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="0.00"
+                        autoFocus
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={editFormData.description}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                      className="w-full px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Description"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-400">
+                      {new Date(transaction.date).toLocaleDateString()}
+                      {transaction.description && ` • ${transaction.description}`}
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+              {editingId === transaction.id ? (
+                <>
+                  <button
+                    onClick={() => handleEditSave(transaction.id)}
+                    className="p-1.5 text-green-600 hover:text-green-700 transition-colors rounded-lg hover:bg-green-50"
+                    aria-label="Save changes"
+                  >
+                    <FiCheck className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={handleEditCancel}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-50"
+                    aria-label="Cancel edit"
+                  >
+                    <FiX className="w-4 h-4" />
+                  </button>
+                </>
               ) : (
-                <FiTrendingDown className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
+                <>
+                  <button
+                    onClick={() => handleEditStart(transaction)}
+                    className="p-1.5 text-blue-600 hover:text-blue-700 transition-colors rounded-lg hover:bg-blue-50"
+                    aria-label="Edit transaction"
+                  >
+                    <FiEdit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(transaction.id, transaction.category)}
+                    className="p-1.5 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
+                    aria-label="Delete transaction"
+                  >
+                    <FiTrash2 className="w-4 h-4" />
+                  </button>
+                </>
               )}
             </div>
-            <div className="min-w-0">
-              <p className="font-semibold text-gray-800 text-sm sm:text-base truncate">
-                {transaction.category}
-              </p>
-              <p className="text-xs text-gray-400 truncate">
-                {new Date(transaction.date).toLocaleDateString()}
-                {transaction.description && ` • ${transaction.description}`}
+          </div>
+          {editingId !== transaction.id && (
+            <div className="mt-1 text-right">
+              <p className={`font-bold text-sm sm:text-base ${
+                transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {transaction.type === 'INCOME' ? '+' : '-'}${transaction.amount.toFixed(2)}
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-2">
-            <p className={`font-bold text-sm sm:text-base ${
-              transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {transaction.type === 'INCOME' ? '+' : '-'}${transaction.amount.toFixed(2)}
-            </p>
-            <button
-              onClick={() => handleDelete(transaction.id)}
-              className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 transition-colors"
-              aria-label="Delete transaction"
-            >
-              <FiTrash2 className="w-4 h-4" />
-            </button>
-          </div>
+          )}
         </div>
       ))}
     </div>

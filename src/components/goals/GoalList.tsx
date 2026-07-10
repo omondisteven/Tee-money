@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { FiTrash2, FiEdit2, FiCheck, FiX, FiTarget, FiSave } from 'react-icons/fi'
+import { FiTrash2, FiEdit2, FiSave, FiCheck, FiX, FiTarget, FiAlertCircle } from 'react-icons/fi'
 
 interface Goal {
   id: string
@@ -52,17 +52,17 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    const goal = goals.find(g => g.id === id)
-    if (!goal) return
-
+  const handleDelete = async (id: string, name: string, currentAmount: number) => {
     // Check if goal has progress
-    if (goal.currentAmount > 0) {
-      toast.error(`Cannot delete "${goal.name}" - it has progress of $${goal.currentAmount.toFixed(2)}`)
+    if (currentAmount > 0) {
+      toast.error(
+        `Cannot delete "${name}" - it has progress of $${currentAmount.toFixed(2)}. ` +
+        `Only goals with no progress can be deleted.`
+      )
       return
     }
 
-    if (!confirm(`Are you sure you want to delete "${goal.name}"?`)) return
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) return
 
     try {
       const res = await fetch(`/api/goals/${id}`, {
@@ -74,7 +74,7 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
         throw new Error(data.error || 'Failed to delete goal')
       }
 
-      toast.success('Goal deleted successfully')
+      toast.success(`Goal "${name}" deleted successfully`)
       await fetchGoals()
     } catch (error: any) {
       toast.error(error.message)
@@ -117,7 +117,7 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
 
     try {
       const res = await fetch(`/api/goals/${id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: editFormData.name.trim(),
@@ -176,9 +176,9 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
           <div key={goal.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
             {/* Header with Actions */}
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
                 <span className="text-3xl">{goal.icon || '🎯'}</span>
-                <div>
+                <div className="min-w-0 flex-1">
                   {isEditing ? (
                     <div className="space-y-1">
                       <input
@@ -191,7 +191,7 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
                       />
                     </div>
                   ) : (
-                    <h4 className="font-semibold text-gray-800">{goal.name}</h4>
+                    <h4 className="font-semibold text-gray-800 truncate">{goal.name}</h4>
                   )}
                   {isEditing ? (
                     <div className="flex items-center gap-2 mt-1">
@@ -210,13 +210,13 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 truncate">
                       Target: ${goal.targetAmount.toFixed(2)}
                     </p>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                 {isEditing ? (
                   <>
                     <button
@@ -247,7 +247,7 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
                       <FiEdit2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(goal.id)}
+                      onClick={() => handleDelete(goal.id, goal.name, goal.currentAmount)}
                       className={`p-2 transition-colors rounded-lg ${
                         hasProgress
                           ? 'text-gray-300 cursor-not-allowed'
@@ -313,22 +313,14 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
                   ${goal.currentAmount.toFixed(2)} saved
                 </span>
               )}
-              {!hasProgress && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-500 text-xs font-medium rounded-full">
-                  No progress yet
-                </span>
-              )}
             </div>
 
-            {/* Read-only notice */}
-            {!readOnly && (
-              <div className="mt-3 text-xs text-gray-400 border-t border-gray-100 pt-2 flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <FiTarget className="w-3 h-3" />
-                  Update from Transactions
-                </span>
-                <span className="text-gray-400">
-                  {hasProgress ? '🔒 Protected' : '✅ Deletable'}
+            {/* Delete Protection Notice */}
+            {hasProgress && (
+              <div className="mt-3 flex items-center gap-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                <FiAlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span className="text-xs text-amber-700">
+                  🔒 This goal has progress and cannot be deleted.
                 </span>
               </div>
             )}

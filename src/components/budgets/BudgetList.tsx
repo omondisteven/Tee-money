@@ -97,6 +97,7 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
     setEditAmount('')
   }
 
+  // This is the key fix - using the same logic as BudgetForm
   const handleEditSave = async (id: string) => {
     const newAmount = parseFloat(editAmount)
     
@@ -114,12 +115,16 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
     }
 
     try {
-      const response = await fetch(`/api/budgets/${id}`, {
-        method: 'PUT',
+      // Use the same API call pattern that works in BudgetForm
+      const response = await fetch('/api/budgets', {
+        method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ amount: newAmount }),
+        body: JSON.stringify({ 
+          category: budget?.category,
+          amount: newAmount 
+        }),
       })
 
       const data = await response.json()
@@ -128,7 +133,7 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
         throw new Error(data.error || data.details || 'Failed to update budget')
       }
 
-      toast.success('Budget updated successfully')
+      toast.success(`Budget updated for "${budget?.category}"`)
       setEditingId(null)
       setEditAmount('')
       await fetchBudgets()

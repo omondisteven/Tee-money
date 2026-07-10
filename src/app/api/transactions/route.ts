@@ -17,11 +17,9 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
     const type = searchParams.get('type')
-    const category = searchParams.get('category')
 
     const where: any = { userId }
     if (type) where.type = type
-    if (category) where.category = category
 
     const transactions = await prisma.transaction.findMany({
       where,
@@ -39,6 +37,7 @@ export async function GET(request: NextRequest) {
       offset,
     })
   } catch (error) {
+    console.error('Error fetching transactions:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -57,74 +56,132 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { type, category, amount, description, date } = await request.json()
+    const { type, category, goalId, amount, description, date } = await request.json()
 
-    // Validate required fields
-    if (!type || !category || !amount) {
+    if (!type || !amount) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    // Find or create category
-    let categoryRecord = await prisma.category.findFirst({
-      where: {
-        userId,
-        name: category,
-        type,
-      },
-    })
+    const parsedAmount = parseFloat(amount)
+    let transactionData: any = {
+      userId,
+      type,
+      amount: parsedAmount,
+      description,
+      date: date ? new Date(date) : new Date(),
+    }
 
-    if (!categoryRecord) {
-      // Create new category if it doesn't exist
-      categoryRecord = await prisma.category.create({
-        data: {
+    if (type === 'GOAL_UPDATE') {
+      // Handle goal update
+      if (!goalId) {
+        return NextResponse.json(
+          { error: 'Goal ID is required for goal updates' },
+          { status: 400 }
+        )
+      }
+
+      const goal = await prisma.goal.findUnique({
+        where: { id: goalId },
+      })
+
+      if (!goal) {
+        return NextResponse.json(
+          { error: 'Goal not found' },
+          { status: 404 }
+        )
+      }
+
+      if (goal.userId !== userId) {
+        return NextResponse.json(
+          { error: 'Forbidden' },
+          { status: 403 }
+        )
+      }
+
+      const newAmount = goal.currentAmount + parsedAmount
+      if (newAmount > goal.targetAmount) {
+        return NextResponse.json(
+          { error: `Amount would exceed goal target of $${goal.targetAmount.toFixed(2)}` },
+          { status: 400 }
+        )
+      }
+
+      // Update goal
+      await prisma.goal.update({
+        where: { id: goalId },
+        data: { currentAmount: newAmount },
+      })
+
+      transactionData.goalId = goalId
+      transactionData.category = `Goal: ${goal.name}`
+
+      // This is a deduction from wallet (like expense)
+      // We'll handle budget updates for goals later
+    } else {
+      // Handle regular income/expense
+      if (!category) {
+        return NextResponse.json(
+          { error: 'Category is required' },
+          { status: 400 }
+        )
+      }
+
+      // Find or create category
+      let categoryRecord = await prisma.category.findFirst({
+        where: {
+          userId,
           name: category,
           type,
-          userId,
-          isDefault: false,
         },
       })
+
+      if (!categoryRecord) {
+        categoryRecord = await prisma.category.create({
+          data: {
+            name: category,
+            type,
+            userId,
+            isDefault: false,
+          },
+        })
+      }
+
+      transactionData.category = category
+      transactionData.categoryId = categoryRecord.id
+
+      // Update budget spent if it's an expense
+      if (type === 'EXPENSE') {
+        const now = new Date()
+        const month = now.getMonth()
+        const year = now.getFullYear()
+
+        const budget = await prisma.budget.findUnique({
+          where: {
+            userId_category_month_year: {
+              userId,
+              category,
+              month,
+              year,
+            },
+          },
+        })
+
+        if (budget) {
+          await prisma.budget.update({
+            where: { id: budget.id },
+            data: { spent: budget.spent + parsedAmount },
+          })
+        }
+      }
     }
 
     const transaction = await prisma.transaction.create({
-      data: {
-        userId,
-        type,
-        category,
-        categoryId: categoryRecord.id,
-        amount: parseFloat(amount),
-        description,
-        date: date ? new Date(date) : new Date(),
-      },
+      data: transactionData,
     })
 
-    // Update budget spent if it's an expense
-    if (type === 'EXPENSE') {
-      const now = new Date()
-      const month = now.getMonth()
-      const year = now.getFullYear()
-
-      const budget = await prisma.budget.findUnique({
-        where: {
-          userId_category_month_year: {
-            userId,
-            category,
-            month,
-            year,
-          },
-        },
-      })
-
-      if (budget) {
-        await prisma.budget.update({
-          where: { id: budget.id },
-          data: { spent: budget.spent + parseFloat(amount) },
-        })
-      }
-    }
- 
     return NextResponse.json(transaction, { status: 201 })
   } catch (error) {
     console.error('Transaction creation error:', error)

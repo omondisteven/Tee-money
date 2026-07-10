@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
-import { FiPlus, FiCheck, FiX } from 'react-icons/fi'
+import { FiPlus, FiCheck, FiX, FiTarget } from 'react-icons/fi'
 
 interface Category {
   id: string
@@ -11,7 +11,15 @@ interface Category {
   isDefault: boolean
 }
 
-// Predefined color palette for categories
+interface Goal {
+  id: string
+  name: string
+  targetAmount: number
+  currentAmount: number
+  icon: string
+}
+
+// Predefined color palette for categories and goals
 const categoryColors = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
   '#DDA0DD', '#FF8A5C', '#A8E6CF', '#FFB7B2', '#B5B8C3',
@@ -25,7 +33,6 @@ function getRandomColor() {
 }
 
 function getTextColorForBackground(hexColor: string) {
-  // Simple contrast checker - returns white for dark colors, black for light colors
   const r = parseInt(hexColor.slice(1, 3), 16)
   const g = parseInt(hexColor.slice(3, 5), 16)
   const b = parseInt(hexColor.slice(5, 7), 16)
@@ -33,25 +40,34 @@ function getTextColorForBackground(hexColor: string) {
   return brightness > 128 ? '#333333' : '#FFFFFF'
 }
 
+type TransactionType = 'INCOME' | 'EXPENSE' | 'GOAL_UPDATE'
+
 export default function TransactionForm({ onSuccess }: { onSuccess: () => void }) {
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
+  const [goals, setGoals] = useState<Goal[]>([])
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [categoryColorMap, setCategoryColorMap] = useState<Record<string, string>>({})
+  const [goalColorMap, setGoalColorMap] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
-    type: 'EXPENSE',
+    type: 'EXPENSE' as TransactionType,
     category: '',
+    goalId: '',
     amount: '',
     description: '',
     date: new Date().toISOString().split('T')[0],
   })
 
   useEffect(() => {
-    fetchCategories(formData.type as 'INCOME' | 'EXPENSE')
+    if (formData.type === 'GOAL_UPDATE') {
+      fetchGoals()
+    } else {
+      fetchCategories(formData.type)
+    }
   }, [formData.type])
 
-  // Generate random colors for categories whenever they change
+  // Generate random colors for categories
   useEffect(() => {
     const colorMap: Record<string, string> = {}
     categories.forEach(cat => {
@@ -60,19 +76,42 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
     setCategoryColorMap(colorMap)
   }, [categories])
 
+  // Generate random colors for goals
+  useEffect(() => {
+    const colorMap: Record<string, string> = {}
+    goals.forEach(goal => {
+      colorMap[goal.id] = getRandomColor()
+    })
+    setGoalColorMap(colorMap)
+  }, [goals])
+
   const fetchCategories = async (type: string) => {
     try {
       const res = await fetch(`/api/categories?type=${type}`)
       if (res.ok) {
         const data = await res.json()
         setCategories(data)
-        // Auto-select first category if none selected
         if (data.length > 0 && !formData.category) {
           setFormData(prev => ({ ...prev, category: data[0].name }))
         }
       }
     } catch (error) {
       console.error('Error fetching categories:', error)
+    }
+  }
+
+  const fetchGoals = async () => {
+    try {
+      const res = await fetch('/api/goals')
+      if (res.ok) {
+        const data = await res.json()
+        setGoals(data)
+        if (data.length > 0 && !formData.goalId) {
+          setFormData(prev => ({ ...prev, goalId: data[0].id }))
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching goals:', error)
     }
   }
 
@@ -113,13 +152,34 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
     setLoading(true)
 
     try {
+      const payload: any = {
+        type: formData.type,
+        amount: parseFloat(formData.amount),
+        description: formData.description,
+        date: formData.date,
+      }
+
+      if (formData.type === 'GOAL_UPDATE') {
+        if (!formData.goalId) {
+          toast.error('Please select a goal')
+          setLoading(false)
+          return
+        }
+        payload.goalId = formData.goalId
+        payload.category = 'Goal Update'
+      } else {
+        if (!formData.category) {
+          toast.error('Please select a category')
+          setLoading(false)
+          return
+        }
+        payload.category = formData.category
+      }
+
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          amount: parseFloat(formData.amount),
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) {
@@ -136,73 +196,131 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
     }
   }
 
-  const availableCategories = categories || []
+  const renderTypeSelector = () => (
+    <div className="grid grid-cols-3 gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          setFormData({ ...formData, type: 'INCOME', category: '', goalId: '' })
+          setIsAddingCategory(false)
+          setNewCategoryName('')
+        }}
+        className={`py-3 rounded-xl font-medium transition-colors ${
+          formData.type === 'INCOME'
+            ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md'
+            : 'bg-gray-100 text-gray-600'
+        }`}
+      >
+        Income
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setFormData({ ...formData, type: 'EXPENSE', category: '', goalId: '' })
+          setIsAddingCategory(false)
+          setNewCategoryName('')
+        }}
+        className={`py-3 rounded-xl font-medium transition-colors ${
+          formData.type === 'EXPENSE'
+            ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md'
+            : 'bg-gray-100 text-gray-600'
+        }`}
+      >
+        Expense
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setFormData({ ...formData, type: 'GOAL_UPDATE', category: '', goalId: '' })
+          setIsAddingCategory(false)
+          setNewCategoryName('')
+        }}
+        className={`py-3 rounded-xl font-medium transition-colors ${
+          formData.type === 'GOAL_UPDATE'
+            ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md'
+            : 'bg-gray-100 text-gray-600'
+        }`}
+      >
+        <span className="flex items-center justify-center gap-1">
+          <FiTarget className="w-4 h-4" />
+          Goal
+        </span>
+      </button>
+    </div>
+  )
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Type Selector */}
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            setFormData({ ...formData, type: 'INCOME', category: '' })
-            setIsAddingCategory(false)
-            setNewCategoryName('')
-          }}
-          className={`py-3 rounded-xl font-medium transition-colors ${
-            formData.type === 'INCOME'
-              ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md'
-              : 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          Income
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setFormData({ ...formData, type: 'EXPENSE', category: '' })
-            setIsAddingCategory(false)
-            setNewCategoryName('')
-          }}
-          className={`py-3 rounded-xl font-medium transition-colors ${
-            formData.type === 'EXPENSE'
-              ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md'
-              : 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          Expense
-        </button>
-      </div>
-
-      {/* Amount Input */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Amount
-        </label>
-        <div className="relative">
-          <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">
-            $
-          </span>
-          <input
-            type="number"
-            required
-            step="0.01"
-            min="0.01"
-            placeholder="0.00"
-            className="w-full pl-8 pr-4 py-4 text-2xl font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={formData.amount}
-            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-          />
+  const renderCategoryGrid = () => {
+    if (formData.type === 'GOAL_UPDATE') {
+      return (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Goal
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {goals.map((goal) => {
+              const bgColor = goalColorMap[goal.id] || '#6B7280'
+              const textColor = getTextColorForBackground(bgColor)
+              const isSelected = formData.goalId === goal.id
+              const progress = (goal.currentAmount / goal.targetAmount) * 100
+              
+              return (
+                <button
+                  key={goal.id}
+                  type="button"
+                  onClick={() => {
+                    setFormData({ ...formData, goalId: goal.id })
+                    setIsAddingCategory(false)
+                    setNewCategoryName('')
+                  }}
+                  className="p-3 rounded-xl text-left transition-all border-2 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 relative overflow-hidden"
+                  style={{
+                    backgroundColor: bgColor,
+                    color: textColor,
+                    borderColor: isSelected ? '#ffffff' : bgColor,
+                    boxShadow: isSelected ? '0 0 0 2px #3B82F6, 0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
+                    transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{goal.icon || '🎯'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{goal.name}</p>
+                      <p className="text-xs opacity-80">
+                        ${goal.currentAmount.toFixed(0)} / ${goal.targetAmount.toFixed(0)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-2 w-full bg-white/20 rounded-full h-1.5">
+                    <div
+                      className="h-1.5 rounded-full bg-white/50 transition-all"
+                      style={{ width: `${Math.min(progress, 100)}%` }}
+                    />
+                  </div>
+                  {isSelected && (
+                    <span className="absolute top-1 right-1 text-[10px]">✓</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+          {goals.length === 0 && (
+            <div className="text-center py-4 bg-gray-50 rounded-xl">
+              <p className="text-sm text-gray-500">No goals set</p>
+              <p className="text-xs text-gray-400">Create a goal in the Goals page first</p>
+            </div>
+          )}
         </div>
-      </div>
+      )
+    }
 
-      {/* Category Grid with Permanent Colors */}
+    // Income/Expense categories
+    return (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Category
         </label>
         <div className="grid grid-cols-3 gap-2">
-          {availableCategories.map((cat) => {
+          {categories.map((cat) => {
             const bgColor = categoryColorMap[cat.id] || '#6B7280'
             const textColor = getTextColorForBackground(bgColor)
             const isSelected = formData.category === cat.name
@@ -216,7 +334,7 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
                   setIsAddingCategory(false)
                   setNewCategoryName('')
                 }}
-                className="py-2 px-3 rounded-xl text-sm font-medium transition-all border-2 shadow-sm hover:shadow-md hover:scale-105 active:scale-95"
+                className="py-2 px-3 rounded-xl text-sm font-medium transition-all border-2 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 relative"
                 style={{
                   backgroundColor: bgColor,
                   color: textColor,
@@ -227,9 +345,7 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
               >
                 <span className="flex items-center justify-center gap-1">
                   {cat.name}
-                  {isSelected && (
-                    <span className="text-[10px]">✓</span>
-                  )}
+                  {isSelected && <span className="text-[10px]">✓</span>}
                 </span>
                 {cat.isDefault && (
                   <span className="absolute -top-1 -right-1 text-[8px] bg-white/80 text-gray-700 rounded-full px-1">
@@ -296,6 +412,36 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
           )}
         </div>
       </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {renderTypeSelector()}
+      
+      {/* Amount Input */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Amount ($)
+        </label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">
+            $
+          </span>
+          <input
+            type="number"
+            required
+            step="0.01"
+            min="0.01"
+            placeholder="0.00"
+            className="w-full pl-8 pr-4 py-4 text-2xl font-bold border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={formData.amount}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+          />
+        </div>
+      </div>
+
+      {renderCategoryGrid()}
 
       {/* Description */}
       <div>
@@ -327,7 +473,7 @@ export default function TransactionForm({ onSuccess }: { onSuccess: () => void }
 
       <button
         type="submit"
-        disabled={loading || !formData.category}
+        disabled={loading || (formData.type !== 'GOAL_UPDATE' ? !formData.category : !formData.goalId)}
         className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 text-lg"
       >
         {loading ? 'Adding...' : 'Save'}

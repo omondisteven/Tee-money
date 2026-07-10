@@ -44,6 +44,8 @@ model Transaction {
   category    String
   categoryId  String?
   categoryRef Category?      @relation(fields: [categoryId], references: [id])
+  goalId      String?        // Reference to goal if this is a goal update
+  goal        Goal?          @relation(fields: [goalId], references: [id])
   amount      Float
   description String?
   date        DateTime       @default(now())
@@ -79,9 +81,12 @@ model Goal {
   icon         String?  @default("🎯")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  transactions Transaction[]
 }
 
 enum TransactionType {
   INCOME
   EXPENSE
+  GOAL_UPDATE  // New type for goal updates
 }

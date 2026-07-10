@@ -50,6 +50,8 @@ export default function GoalList() {
 
   const handleUpdateProgress = async (id: string) => {
     const amount = parseFloat(editingAmount[id])
+
+    console.log('Updating goal:', { id, amount })
     
     if (isNaN(amount) || amount < 0) {
       toast.error('Please enter a valid amount')

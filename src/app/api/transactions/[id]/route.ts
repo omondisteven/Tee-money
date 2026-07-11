@@ -116,6 +116,48 @@ export async function DELETE(
   }
 }
 
+export async function GET(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+  ) {
+    try {
+      const userId = await getUserIdFromRequest(request)
+
+      if (!userId) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        )
+      }
+
+      const transaction = await prisma.transaction.findUnique({
+        where: { id: params.id },
+      })
+
+      if (!transaction) {
+        return NextResponse.json(
+          { error: 'Transaction not found' },
+          { status: 404 }
+        )
+      }
+
+      if (transaction.userId !== userId) {
+        return NextResponse.json(
+          { error: 'Forbidden' },
+          { status: 403 }
+        )
+      }
+
+      return NextResponse.json(transaction)
+    } catch (error) {
+      console.error('Error fetching transaction:', error)
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      )
+    }
+  }
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }

@@ -61,13 +61,13 @@ export async function POST(request: NextRequest) {
 
     if (!type || !amount) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Type and amount are required' },
         { status: 400 }
       )
     }
 
     const parsedAmount = parseFloat(amount)
-    let transactionData: any = {
+    const transactionData: any = {
       userId,
       type,
       amount: parsedAmount,
@@ -118,9 +118,6 @@ export async function POST(request: NextRequest) {
 
       transactionData.goalId = goalId
       transactionData.category = `Goal: ${goal.name}`
-
-      // This is a deduction from wallet (like expense)
-      // We'll handle budget updates for goals later
     } else {
       // Handle regular income/expense
       if (!category) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { FiTrash2, FiEdit2, FiSave, FiCheck, FiX, FiTarget, FiAlertCircle } from 'react-icons/fi'
+import { FiTrash2, FiEdit2, FiCheck, FiX, FiTarget, FiSave } from 'react-icons/fi'
 
 interface Goal {
   id: string
@@ -40,8 +40,6 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
         const data = await res.json()
         setGoals(data)
       } else {
-        const errorData = await res.json()
-        console.error('Failed to fetch goals:', errorData)
         toast.error('Failed to load goals')
       }
     } catch (error) {
@@ -53,7 +51,6 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
   }
 
   const handleDelete = async (id: string, name: string, currentAmount: number) => {
-    // Check if goal has progress
     if (currentAmount > 0) {
       toast.error(
         `Cannot delete "${name}" - it has progress of $${currentAmount.toFixed(2)}. ` +
@@ -69,8 +66,9 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
         method: 'DELETE',
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json()
         throw new Error(data.error || 'Failed to delete goal')
       }
 
@@ -98,7 +96,6 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
     const goal = goals.find(g => g.id === id)
     if (!goal) return
 
-    // Validate
     if (!editFormData.name.trim()) {
       toast.error('Goal name is required')
       return
@@ -125,9 +122,10 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
         }),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to update goal')
+        throw new Error(data.error || data.details || 'Failed to update goal')
       }
 
       toast.success('Goal updated successfully!')
@@ -135,7 +133,8 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
       setEditFormData({ name: '', targetAmount: '' })
       await fetchGoals()
     } catch (error: any) {
-      toast.error(error.message)
+      console.error('Update error:', error)
+      toast.error(error.message || 'Failed to update goal')
     }
   }
 
@@ -314,16 +313,6 @@ export default function GoalList({ readOnly = false }: GoalListProps) {
                 </span>
               )}
             </div>
-
-            {/* Delete Protection Notice */}
-            {hasProgress && (
-              <div className="mt-3 flex items-center gap-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
-                <FiAlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                <span className="text-xs text-amber-700">
-                  🔒 This goal has progress and cannot be deleted.
-                </span>
-              </div>
-            )}
           </div>
         )
       })}

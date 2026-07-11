@@ -1,4 +1,3 @@
-// src\components\transactions\TransactionList.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -48,6 +47,8 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
       if (res.ok) {
         const data = await res.json()
         setTransactions(data.transactions)
+      } else {
+        toast.error('Failed to load transactions')
       }
     } catch (error) {
       console.error('Error fetching transactions:', error)
@@ -92,7 +93,6 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
     setEditFormData({ amount: '', description: '' })
   }
 
-  // FIX: Use PUT for editing, not POST
   const handleEditSave = async (id: string) => {
     const newAmount = parseFloat(editFormData.amount)
     
@@ -101,7 +101,6 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
       return
     }
 
-    // Find the transaction to get its data
     const transaction = transactions.find(t => t.id === id)
     if (!transaction) {
       toast.error('Transaction not found')
@@ -148,13 +147,7 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
     return (
       <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          {filter === 'income' ? (
-            <FiTrendingUp className="w-10 h-10 text-gray-400" />
-          ) : filter === 'expense' ? (
-            <FiTrendingDown className="w-10 h-10 text-gray-400" />
-          ) : (
-            <FiTrendingUp className="w-10 h-10 text-gray-400" />
-          )}
+          <FiTrendingUp className="w-10 h-10 text-gray-400" />
         </div>
         <p className="text-gray-500 font-medium">No transactions found</p>
         <p className="text-sm text-gray-400 mt-1">Add your first transaction</p>
@@ -211,12 +204,10 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
                     />
                   </div>
                 ) : (
-                  <>
-                    <p className="text-xs text-gray-400">
-                      {new Date(transaction.date).toLocaleDateString()}
-                      {transaction.description && ` • ${transaction.description}`}
-                    </p>
-                  </>
+                  <p className="text-xs text-gray-400">
+                    {new Date(transaction.date).toLocaleDateString()}
+                    {transaction.description && ` • ${transaction.description}`}
+                  </p>
                 )}
               </div>
             </div>

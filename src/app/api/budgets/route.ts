@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(budgets)
   } catch (error) {
+    console.error('Error fetching budgets:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -46,6 +47,13 @@ export async function POST(request: NextRequest) {
     }
 
     const { category, amount } = await request.json()
+
+    if (!category || !amount) {
+      return NextResponse.json(
+        { error: 'Category and amount are required' },
+        { status: 400 }
+      )
+    }
 
     const now = new Date()
     const month = now.getMonth()
@@ -74,6 +82,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(budget, { status: 201 })
   } catch (error) {
+    console.error('Error setting budget:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

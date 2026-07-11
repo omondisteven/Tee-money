@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FiTrash2, FiEdit2, FiCheck, FiX, FiPieChart, FiAlertCircle } from 'react-icons/fi'
+import { FiTrash2, FiEdit2, FiCheck, FiX, FiPieChart, FiSave } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 
 interface Budget {
@@ -75,8 +75,9 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
         method: 'DELETE',
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json()
         throw new Error(data.error || 'Failed to delete budget')
       }
 
@@ -101,13 +102,11 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
   const handleEditSave = async (id: string) => {
     const newAmount = parseFloat(editAmount)
     
-    // Validate amount
     if (isNaN(newAmount) || newAmount <= 0) {
-      toast.error('Please enter a valid amount greater than 0')
+      toast.error('Please enter a valid amount')
       return
     }
 
-    // Find the budget to check current spent amount
     const budget = budgets.find(b => b.id === id)
     if (budget && newAmount < budget.spent) {
       toast.error(`Amount cannot be less than already spent ($${budget.spent.toFixed(2)})`)
@@ -115,24 +114,19 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
     }
 
     try {
-      const response = await fetch('/api/budgets', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          category: budget?.category,
-          amount: newAmount 
-        }),
+      const res = await fetch(`/api/budgets/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: newAmount }),
       })
 
-      const data = await response.json()
+      const data = await res.json()
 
-      if (!response.ok) {
+      if (!res.ok) {
         throw new Error(data.error || data.details || 'Failed to update budget')
       }
 
-      toast.success(`Budget updated for "${budget?.category}"`)
+      toast.success('Budget updated successfully')
       setEditingId(null)
       setEditAmount('')
       await fetchBudgets()
@@ -212,7 +206,7 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
                       className="p-1.5 text-green-600 hover:text-green-700 transition-colors rounded-lg hover:bg-green-50"
                       aria-label="Save changes"
                     >
-                      <FiCheck className="w-4 h-4" />
+                      <FiSave className="w-4 h-4" />
                     </button>
                     <button
                       onClick={handleEditCancel}
@@ -278,18 +272,6 @@ export default function BudgetList({ onUpdate }: BudgetListProps) {
                 </span>
               </div>
             </div>
-
-            {/* Delete Protection Notice */}
-            {hasSpending && (
-              <div className="mt-3 flex items-center gap-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
-                <FiAlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                <span className="text-xs text-amber-700">
-                  🔒 This budget has spending and cannot be deleted.
-                  {budget.spent < budget.amount && 
-                    ` Reduce spending to $0 before deleting.`}
-                </span>
-              </div>
-            )}
           </div>
         )
       })}

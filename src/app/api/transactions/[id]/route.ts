@@ -40,6 +40,7 @@ export async function DELETE(
       type: transaction.type, 
       category: transaction.category,
       amount: transaction.amount,
+      date: transaction.date,
       userId: transaction.userId 
     })
 
@@ -52,12 +53,13 @@ export async function DELETE(
       )
     }
 
-    // If it's an expense, update the budget spent
+    // If it's an expense, update the budget spent using the transaction's date
     if (transaction.type === 'EXPENSE') {
       console.log('💰 Updating budget for expense...')
-      const now = new Date()
-      const month = now.getMonth()
-      const year = now.getFullYear()
+      // FIX: Use transaction date, not today's date
+      const transactionDate = new Date(transaction.date)
+      const month = transactionDate.getMonth()
+      const year = transactionDate.getFullYear()
 
       try {
         const budget = await prisma.budget.findUnique({
@@ -73,18 +75,44 @@ export async function DELETE(
 
         if (budget) {
           console.log('✅ Found budget, updating spent...')
+          const newSpent = budget.spent - transaction.amount
           await prisma.budget.update({
             where: { id: budget.id },
-            data: { spent: Math.max(0, budget.spent - transaction.amount) },
+            data: { spent: newSpent },
           })
           console.log('✅ Budget updated successfully')
         } else {
-          console.log('ℹ️ No budget found for this category, skipping update')
+          console.log('ℹ️ No budget found for this category/month, skipping update')
         }
-      } catch (budgetError) {
+      } catch (budgetError: any) {
         console.error('❌ Error updating budget:', budgetError)
+        console.error('❌ Error code:', budgetError.code)
+        console.error('❌ Error meta:', budgetError.meta)
         // Don't fail the transaction deletion if budget update fails
         // Just log the error and continue
+      }
+    }
+
+    // If it's a GOAL_UPDATE, revert the goal progress
+    if (transaction.type === 'GOAL_UPDATE' && transaction.goalId) {
+      console.log('🎯 Reverting goal progress...')
+      try {
+        const goal = await prisma.goal.findUnique({
+          where: { id: transaction.goalId },
+        })
+
+        if (goal) {
+          const newAmount = Math.max(0, goal.currentAmount - transaction.amount)
+          await prisma.goal.update({
+            where: { id: goal.id },
+            data: { currentAmount: newAmount },
+          })
+          console.log('✅ Goal progress reverted successfully')
+        }
+      } catch (goalError: any) {
+        console.error('❌ Error updating goal:', goalError)
+        console.error('❌ Error code:', goalError.code)
+        console.error('❌ Error meta:', goalError.meta)
       }
     }
 
@@ -103,60 +131,21 @@ export async function DELETE(
     })
   } catch (error: any) {
     console.error('❌ Error deleting transaction:', error)
+    console.error('❌ Error code:', error.code)
+    console.error('❌ Error meta:', error.meta)
     console.error('❌ Error stack:', error.stack)
     console.log('=== TRANSACTION DELETE FAILED ===\n')
     
     return NextResponse.json(
       { 
         error: 'Failed to delete transaction',
+        code: error.code,
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
       },
       { status: 500 }
     )
   }
 }
-
-export async function GET(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-  ) {
-    try {
-      const userId = await getUserIdFromRequest(request)
-
-      if (!userId) {
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        )
-      }
-
-      const transaction = await prisma.transaction.findUnique({
-        where: { id: params.id },
-      })
-
-      if (!transaction) {
-        return NextResponse.json(
-          { error: 'Transaction not found' },
-          { status: 404 }
-        )
-      }
-
-      if (transaction.userId !== userId) {
-        return NextResponse.json(
-          { error: 'Forbidden' },
-          { status: 403 }
-        )
-      }
-
-      return NextResponse.json(transaction)
-    } catch (error) {
-      console.error('Error fetching transaction:', error)
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      )
-    }
-  }
 
 export async function PUT(
   request: NextRequest,
@@ -218,6 +207,7 @@ export async function PUT(
       type: transaction.type, 
       category: transaction.category,
       amount: transaction.amount,
+      date: transaction.date,
       userId: transaction.userId 
     })
 
@@ -239,24 +229,22 @@ export async function PUT(
       )
     }
 
-    // Handle budget updates if transaction type changes or amount changes
-    let budgetUpdateError: string | null = null
+    // Handle budget updates using the transaction's date
+    const transactionDate = new Date(transaction.date)
+    const oldMonth = transactionDate.getMonth()
+    const oldYear = transactionDate.getFullYear()
 
-    try {
-      // If it was an expense, revert the budget spent
-      if (transaction.type === 'EXPENSE') {
-        console.log('💰 Reverting old expense from budget...')
-        const now = new Date()
-        const month = now.getMonth()
-        const year = now.getFullYear()
-
+    // If it was an expense, revert the budget spent using the old month/year
+    if (transaction.type === 'EXPENSE') {
+      console.log('💰 Reverting old expense from budget...')
+      try {
         const budget = await prisma.budget.findUnique({
           where: {
             userId_category_month_year: {
               userId,
               category: transaction.category,
-              month,
-              year,
+              month: oldMonth,  // Use the correct field name 'month'
+              year: oldYear,    // Use the correct field name 'year'
             },
           },
         })
@@ -265,40 +253,69 @@ export async function PUT(
           console.log('✅ Found budget, reverting spent...')
           await prisma.budget.update({
             where: { id: budget.id },
-            data: { spent: Math.max(0, budget.spent - transaction.amount) },
+            data: { spent: budget.spent - transaction.amount },
           })
           console.log('✅ Budget reverted successfully')
         }
+      } catch (budgetError: any) {
+        console.error('❌ Error reverting budget:', budgetError)
+        console.error('❌ Error code:', budgetError.code)
+        console.error('❌ Error meta:', budgetError.meta)
       }
+    }
 
-      // Update the transaction
-      console.log('🔄 Updating transaction...')
-      const updatedTransaction = await prisma.transaction.update({
-        where: { id: params.id },
-        data: {
-          type,
-          category,
-          amount: newAmount,
-          description,
-          date: date ? new Date(date) : new Date(),
-        },
-      })
-      console.log('✅ Transaction updated successfully')
+    // If it was a GOAL_UPDATE, revert the goal progress
+    if (transaction.type === 'GOAL_UPDATE' && transaction.goalId) {
+      console.log('🎯 Reverting goal progress...')
+      try {
+        const goal = await prisma.goal.findUnique({
+          where: { id: transaction.goalId },
+        })
 
-      // If it's an expense, update the budget spent
-      if (type === 'EXPENSE') {
-        console.log('💰 Adding new expense to budget...')
-        const now = new Date()
-        const month = now.getMonth()
-        const year = now.getFullYear()
+        if (goal) {
+          const newAmount = Math.max(0, goal.currentAmount - transaction.amount)
+          await prisma.goal.update({
+            where: { id: goal.id },
+            data: { currentAmount: newAmount },
+          })
+          console.log('✅ Goal progress reverted successfully')
+        }
+      } catch (goalError: any) {
+        console.error('❌ Error reverting goal:', goalError)
+        console.error('❌ Error code:', goalError.code)
+        console.error('❌ Error meta:', goalError.meta)
+      }
+    }
 
+    // Update the transaction
+    console.log('🔄 Updating transaction...')
+    const updatedTransaction = await prisma.transaction.update({
+      where: { id: params.id },
+      data: {
+        type,
+        category,
+        amount: newAmount,
+        description,
+        date: date ? new Date(date) : new Date(),
+      },
+    })
+    console.log('✅ Transaction updated successfully')
+
+    // If it's an expense, update the budget spent using the new transaction date
+    if (type === 'EXPENSE') {
+      console.log('💰 Adding new expense to budget...')
+      const newDate = date ? new Date(date) : new Date()
+      const newMonth = newDate.getMonth()
+      const newYear = newDate.getFullYear()
+
+      try {
         const budget = await prisma.budget.findUnique({
           where: {
             userId_category_month_year: {
               userId,
               category,
-              month,
-              year,
+              month: newMonth,  // Use the correct field name 'month'
+              year: newYear,    // Use the correct field name 'year'
             },
           },
         })
@@ -311,38 +328,92 @@ export async function PUT(
           })
           console.log('✅ Budget updated successfully')
         }
+      } catch (budgetError: any) {
+        console.error('❌ Error adding to budget:', budgetError)
+        console.error('❌ Error code:', budgetError.code)
+        console.error('❌ Error meta:', budgetError.meta)
       }
-
-      console.log('=== TRANSACTION UPDATE END ===\n')
-      return NextResponse.json(updatedTransaction)
-    } catch (error) {
-      // Catch any budget update errors
-      const errorMessage = error instanceof Error ? error.message : 'Unknown budget update error'
-      console.error('❌ Error updating budget:', errorMessage)
-      budgetUpdateError = errorMessage
-      
-      // Still return the updated transaction but with a warning
-      console.log('⚠️ Transaction updated but budget update failed')
-      console.log('=== TRANSACTION UPDATE END ===\n')
-      
-      return NextResponse.json(
-        { 
-          warning: 'Transaction updated but budget update failed',
-          details: process.env.NODE_ENV === 'development' ? budgetUpdateError : undefined
-        },
-        { status: 500 }
-      )
     }
+
+    // If it's a GOAL_UPDATE, update the goal progress
+    if (type === 'GOAL_UPDATE' && updatedTransaction.goalId) {
+      console.log('🎯 Updating goal progress...')
+      try {
+        const goal = await prisma.goal.findUnique({
+          where: { id: updatedTransaction.goalId },
+        })
+
+        if (goal) {
+          await prisma.goal.update({
+            where: { id: goal.id },
+            data: { currentAmount: goal.currentAmount + newAmount },
+          })
+          console.log('✅ Goal progress updated successfully')
+        }
+      } catch (goalError: any) {
+        console.error('❌ Error updating goal:', goalError)
+        console.error('❌ Error code:', goalError.code)
+        console.error('❌ Error meta:', goalError.meta)
+      }
+    }
+
+    console.log('=== TRANSACTION UPDATE END ===\n')
+    return NextResponse.json(updatedTransaction)
   } catch (error: any) {
     console.error('❌ Error updating transaction:', error)
+    console.error('❌ Error code:', error.code)
+    console.error('❌ Error meta:', error.meta)
     console.error('❌ Error stack:', error.stack)
     console.log('=== TRANSACTION UPDATE FAILED ===\n')
     
     return NextResponse.json(
       { 
         error: 'Failed to update transaction',
+        code: error.code,
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
       },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const userId = await getUserIdFromRequest(request)
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: params.id },
+    })
+
+    if (!transaction) {
+      return NextResponse.json(
+        { error: 'Transaction not found' },
+        { status: 404 }
+      )
+    }
+
+    if (transaction.userId !== userId) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    return NextResponse.json(transaction)
+  } catch (error) {
+    console.error('Error fetching transaction:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

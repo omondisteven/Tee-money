@@ -7,7 +7,7 @@ import { FiTrash2, FiEdit2, FiCheck, FiX, FiTrendingUp, FiTrendingDown, FiSave }
 
 interface Transaction {
   id: string
-  type: 'INCOME' | 'EXPENSE'
+  type: 'INCOME' | 'EXPENSE' | 'GOAL_UPDATE'
   category: string
   amount: number
   description?: string
@@ -92,7 +92,7 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
     setEditFormData({ amount: '', description: '' })
   }
 
-  // Using the same POST approach that works for BudgetList
+  // FIX: Use PUT for editing, not POST
   const handleEditSave = async (id: string) => {
     const newAmount = parseFloat(editFormData.amount)
     
@@ -109,9 +109,8 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
     }
 
     try {
-      // Use POST to update (same as BudgetList approach)
-      const res = await fetch('/api/transactions', {
-        method: 'POST',
+      const res = await fetch(`/api/transactions/${id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: transaction.type,
@@ -122,9 +121,10 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
         }),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to update transaction')
+        throw new Error(data.error || data.details || 'Failed to update transaction')
       }
 
       toast.success('Transaction updated successfully')
@@ -172,12 +172,15 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                transaction.type === 'INCOME' ? 'bg-green-100' : 'bg-red-100'
+                transaction.type === 'INCOME' ? 'bg-green-100' : 
+                transaction.type === 'EXPENSE' ? 'bg-red-100' : 'bg-purple-100'
               }`}>
                 {transaction.type === 'INCOME' ? (
                   <FiTrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-                ) : (
+                ) : transaction.type === 'EXPENSE' ? (
                   <FiTrendingDown className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
+                ) : (
+                  <FiTrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 )}
               </div>
               <div className="min-w-0 flex-1">
@@ -258,7 +261,8 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
           {editingId !== transaction.id && (
             <div className="mt-1 text-right">
               <p className={`font-bold text-sm sm:text-base ${
-                transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
+                transaction.type === 'INCOME' ? 'text-green-600' : 
+                transaction.type === 'EXPENSE' ? 'text-red-600' : 'text-purple-600'
               }`}>
                 {transaction.type === 'INCOME' ? '+' : '-'}${transaction.amount.toFixed(2)}
               </p>

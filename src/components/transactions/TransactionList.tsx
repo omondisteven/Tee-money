@@ -1,8 +1,9 @@
+// src\components\transactions\TransactionList.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { FiTrash2, FiEdit2, FiCheck, FiX, FiTrendingUp, FiTrendingDown } from 'react-icons/fi'
+import { FiTrash2, FiEdit2, FiCheck, FiX, FiTrendingUp, FiTrendingDown, FiSave } from 'react-icons/fi'
 
 interface Transaction {
   id: string
@@ -89,6 +90,7 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
     setEditFormData({ amount: '', description: '' })
   }
 
+  // Using the same POST approach that works for BudgetList
   const handleEditSave = async (id: string) => {
     const newAmount = parseFloat(editFormData.amount)
     
@@ -97,13 +99,24 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
       return
     }
 
+    // Find the transaction to get its data
+    const transaction = transactions.find(t => t.id === id)
+    if (!transaction) {
+      toast.error('Transaction not found')
+      return
+    }
+
     try {
-      const res = await fetch(`/api/transactions/${id}`, {
-        method: 'PUT',
+      // Use POST to update (same as BudgetList approach)
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          type: transaction.type,
+          category: transaction.category,
           amount: newAmount,
-          description: editFormData.description,
+          description: editFormData.description || transaction.description,
+          date: transaction.date,
         }),
       })
 
@@ -116,7 +129,8 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
       setEditingId(null)
       await fetchTransactions()
     } catch (error: any) {
-      toast.error(error.message)
+      console.error('Update error:', error)
+      toast.error(error.message || 'Failed to update transaction')
     }
   }
 
@@ -209,7 +223,7 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
                     className="p-1.5 text-green-600 hover:text-green-700 transition-colors rounded-lg hover:bg-green-50"
                     aria-label="Save changes"
                   >
-                    <FiCheck className="w-4 h-4" />
+                    <FiSave className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleEditCancel}

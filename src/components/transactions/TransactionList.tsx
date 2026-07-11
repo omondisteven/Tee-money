@@ -65,15 +65,17 @@ export default function TransactionList({ filter = 'all' }: TransactionListProps
         method: 'DELETE',
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to delete transaction')
+        throw new Error(data.error || data.details || 'Failed to delete transaction')
       }
 
       toast.success(`Transaction for "${category}" deleted`)
       await fetchTransactions()
     } catch (error: any) {
-      toast.error(error.message)
+      console.error('Delete error:', error)
+      toast.error(error.message || 'Failed to delete transaction')
     }
   }
 
